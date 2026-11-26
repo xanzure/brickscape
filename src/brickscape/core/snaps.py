@@ -286,19 +286,20 @@ def match(a, b):
             return None
         if m.caps in ("one", "a", "two") and f.caps in ("one", "b", "two") and not same:
             return None
-        ok = False
+        kind = None
         for ms, mr, ma, mb in _secs_at(m, lo, hi):
             for fs, fr, fa, fb in _secs_at(f, *(sorted(((lo - off) if same else (off - hi),
                                                         (hi - off) if same else (off - lo))))):
                 if ms in ("R", "A", "S") and fs in ("R", "A", "S") and mr > fr + 0.75:
                     return None                    # male thicker than the hole: interference
-                if _compat((ms, mr), (fs, fr)):
-                    ok = True
-        if not ok:
-            return None
-        if m.radius >= 5.5 and m.length <= 4.5:
-            return "stud"
-        return "pin" if m.radius >= 5.5 else "bar"
+                if _compat((ms, mr), (fs, fr)) and kind != "stud":
+                    if abs(mr - 6) < 0.75:         # stud into anti-stud, or a pin in a Technic hole
+                        kind = "pin" if f.caps == "none" and m.caps == "none" else "stud"
+                    elif mr < 5.5:
+                        kind = "bar"
+                    else:
+                        kind = "round"             # e.g. a round plate's body nested in a round hole
+        return kind
     if k == {"clp", "cyl"}:
         c_, y = (a, b) if a.kind == "clp" else (b, a)
         if y.gender != "M" or abs(c_.radius - y.radius) > 0.75 and not any(

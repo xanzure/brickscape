@@ -9,7 +9,7 @@ puts a part on that stud and returns the frame of the part's top stud. Side stud
 
 All pieces are marked free (the stud checker can't judge angled parts); they really connect.
 """
-import math
+import functools, math
 from brickscape.core.brick import info, _mul
 
 GREEN, BGREEN, DGREEN, OLIVE, LIME, SGREEN = 2, 10, 288, 330, 27, 378
@@ -72,27 +72,75 @@ BAR_UP = {"19119": -6, "24855": -16, "37695": 0, "15279": 0, "33183": 0, "99249"
           "2566": -36, "1747": 0, "55236": 0, "28870": -6}
 
 
+OPEN = "85861"      # 1x1 round plate with OPEN stud: bar-ended stems need the hollow stud
+FIT = True          # decorative parts that clash are turned about their stud, or left out
+
+
+def decorative(part):
+    d = info(part)["desc"].lower()
+    return any(w in d for w in ("plant", "leaf", "leaves", "flower", "grass", "vine", "stem", "bush"))
+
+
 def put(b, part, colour, F):
-    p = b.raw(part, colour, F)
-    p.soft, p.free = True, True
-    return p
+    """Place a part at frame F. A part that clashes with its neighbours is left out (returns
+    None); a decorative one is first tried at 7 more turns about its own axis."""
+    if F is None:
+        return None
+    turns = (0, 45, 90, 135, 180, 225, 270, 315) if FIT and decorative(part) else (0,)
+    from brickscape.core.space import fits
+    for t in turns:
+        p = b.raw(part, colour, M(F, Ry(t)) if t else F)
+        if not FIT or fits(b, len(b.pieces) - 1):
+            return p
+        b.pop()
+    return None
+
+
+@functools.lru_cache(None)
+def bar_down(part):
+    """True if the part plugs in with a bar pointing down (flower stems, plumes, palm tops)."""
+    from brickscape.core.snaps import part_snaps
+    S, _ = part_snaps(part)
+    return any(s.kind == "cyl" and s.gender == "M" and s.radius < 5.5 and -s.R[1, 1] > 0.99
+               and abs(s.pos[0]) < 1 and abs(s.pos[2]) < 1 for s in S)
+
+
+def seat(b, part, colour, F, turns=None):
+    """Slide a bar-ended part down the stud axis of F to the deepest spot where its bar is held
+    (a real connection to a neighbour) and nothing clashes. Tries turns for decorative parts."""
+    from brickscape.core.space import fits, joined
+    if turns is None:
+        turns = (0, 45, 90, 135, 180, 225, 270, 315) if FIT and decorative(part) else (0,)
+    for t in turns:
+        R = M(F, Ry(t)) if t else F
+        for dy in range(16, -40, -1):
+            p = b.raw(part, colour, M(R, T(0, dy, 0)))
+            i = len(b.pieces) - 1
+            held = any(joined(p, b.pieces[j]) for j in b.near(i))
+            if held and (not FIT or fits(b, i)):
+                return p
+            b.pop()
+    return None
 
 
 def on(b, F, part, colour, turn=0):
     """Part on the stud of frame F (turned `turn` degrees about the stud). -> frame of its top stud
     (for bricks/plates) or of its origin (bar parts)."""
+    if F is None:
+        return None
     F = M(F, Ry(turn))
-    if part in BAR_UP:
-        G = M(F, T(0, BAR_UP[part], 0))
-        put(b, part, colour, G)
-        return G
+    if bar_down(part):
+        p = seat(b, part, colour, F)
+        return p.M if p is not None else None
     h = info(part)["bottom"][0]
     G = M(F, T(0, -h, 0))
-    put(b, part, colour, G)
-    return G
+    p = put(b, part, colour, G)
+    return p.M if p is not None else None
 
 
 def side(F, part, k, roll=0):
+    if F is None:
+        return None
     """Frame of side stud k (0..3) of a SNOT brick whose top-stud frame is F (4733 / 47905 / 87087).
     roll turns the next part about that stud."""
     studs = [s for s in info(part)["studs"] if abs(s[1][1]) < 0.5]
@@ -103,6 +151,8 @@ def side(F, part, k, roll=0):
 
 
 def slots(F, stem):
+    if F is None:
+        return []
     return [M(F, s) for s in SLOTS[stem]]
 
 
@@ -113,7 +163,7 @@ def ground(b, x, z, y=0, yaw=0):
 
 # ----------------------------------------------------------------- small plants (one stud)
 def tuft(b, rng, x, z, y=0, kind="grass", colour=DGREEN, base=DGREEN):
-    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), "4073", base)
+    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), OPEN, base)
     if kind == "grass":
         on(b, F, "15279", colour)
     elif kind == "twig":
@@ -134,7 +184,7 @@ def tuft(b, rng, x, z, y=0, kind="grass", colour=DGREEN, base=DGREEN):
 
 def flower(b, rng, x, z, y=0, colour=RED, leaf=BGREEN, kind="24866"):
     """A single flower on leaves: 1x1 round plate, 3-leaf plate, flower plate."""
-    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), "4073", DGREEN)
+    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), OPEN, DGREEN)
     F = on(b, F, "32607", leaf, rng.uniform(0, 360))
     on(b, F, kind, colour)
 
@@ -142,7 +192,7 @@ def flower(b, rng, x, z, y=0, colour=RED, leaf=BGREEN, kind="24866"):
 def stem_flowers(b, rng, x, z, y=0, colours=(RED,), stem="3741a", stem_colour=GREEN, kind="24866",
                  leaf=None):
     """Flower stem (3 or 6 ends) with a flower plate on every end; optional 3-leaf base."""
-    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), "4073", DGREEN)
+    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), OPEN, DGREEN)
     if leaf is not None:
         F = on(b, F, "32607", leaf, rng.uniform(0, 360))
     G = on(b, F, stem, stem_colour)
@@ -168,7 +218,7 @@ def snot_bush(b, rng, x, z, y=0, levels=2, leaf=(GREEN, BGREEN), flowers=(), flo
               top=True, leaf_part="32607", core=DGREEN):
     """Round bush: a column of 1x1 bricks with studs on 4 sides (4733), a 3-leaf plate on every side
     stud (leaves droop out), more on top. flowers: colours for flower plates on some leaf studs."""
-    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), "4073", core)
+    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), OPEN, core)
     leaves = []
     for lv in range(levels):
         C = F
@@ -210,14 +260,14 @@ def cypress(b, rng, x, z, y=0, levels=5, leaf=(DGREEN,), trunk=RBROWN):
 def fern_clump(b, rng, x, z, y=0, colour=DGREEN, n=3):
     """Fern / hosta: 4x3 leaves stacked on a round 1x1 core, each turned ~120 degrees."""
     F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), "3062b", colour)
-    for i in range(n):
-        on(b, F, "2423", colour, i * 360 / n + rng.uniform(-15, 15))
-        F = on(b, F, "4073", colour)
+    for i in range(n):                       # each leaf on the stud of the plate below it
+        F = on(b, F, "2423", colour, i * 360 / n + rng.uniform(-15, 15))
+        F = on(b, F, OPEN, colour)
 
 
 def big_leaf_plant(b, rng, x, z, y=0, colour=GREEN, n=3, flowers=()):
     """Big-leaf clump (the video's 'agave' row): 3-large-leaf plants stacked on round plates."""
-    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), "4073", DGREEN)
+    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), OPEN, DGREEN)
     for i in range(n):
         F = on(b, F, "6255", colour, i * 47)
     if flowers:
@@ -229,7 +279,7 @@ def big_leaf_plant(b, rng, x, z, y=0, colour=GREEN, n=3, flowers=()):
 def sword_plant(b, rng, x, z, y=0, colour=DGREEN):
     """Spiky dark-green plant: palm leaves (6148) splayed round a round brick, drooping."""
     F = on(b, ground(b, x, z, y, 0), "3062b", colour)
-    G = on(b, F, "4073", colour)
+    G = on(b, F, OPEN, colour)
     for k in range(5):
         put(b, "6148", colour, M(G, Ry(k * 72 + rng.uniform(-10, 10)), Rz(-25), T(10, -6, 0)))
 
@@ -242,16 +292,17 @@ def bamboo(b, rng, x, z, y=0, n=5, colour=GREEN, leaf=GREEN):
 
 
 def pine(b, rng, x, z, y=0, n=4, colour=DGREEN):
-    """Spiky young pine (video, back right): a brown round trunk with bare 6-stem whorls."""
-    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), "3062b", RBROWN)
+    """Young pine: a brown round trunk with tiers of dark leaves, wide at the bottom and
+    narrowing up (6x5 leaves, then 4x3, then 3-leaf plates), a grass sprig on top."""
+    F = ground(b, x, z, y, rng.uniform(0, 360))
+    F = on(b, F, "3062b", RBROWN)
     for i in range(n):
-        F = on(b, F, "3062b", RBROWN)
-        on(b, F, "19119", colour, i * 37)
-        F = on(b, F, "4073", RBROWN)
-    on(b, F, "15279", colour)
+        part = "2417" if i < n // 2 else "2423" if i < n - 1 else "32607"
+        F = on(b, F, "3062b", RBROWN, rng.uniform(0, 360))
+        L = on(b, F, part, colour, i * 67 + rng.uniform(-20, 20))
+        F = L if L is not None else F
+    on(b, F, OPEN, RBROWN)
 
-
-# ----------------------------------------------------------------- trees from the references
 def birch(b, rng, x, z, y=0, leaf=(YELLOW, ORANGE, BLO), height=9, arms=2):
     """Birch: white 1x1 round bricks with black 1x1 round plates between (the bark
     bands), side arms out of 1x1 bricks with a side stud, and flat star crowns (6-stem flower
@@ -262,43 +313,45 @@ def birch(b, rng, x, z, y=0, leaf=(YELLOW, ORANGE, BLO), height=9, arms=2):
         if i in arm_at:
             F = on(b, F, "87087", WHITE)
             S = side(F, "87087", 0, 0)
-            S = on(b, S, "4073", WHITE)
-            S = M(S, Rx(-55))                   # the arm leans upward
+            S = on(b, S, OPEN, WHITE)
             G = on(b, S, "19119", ORANGE if leaf[0] in (YELLOW, ORANGE, BLO) else GREEN)
             for s in slots(G, "19119"):
                 if rng.random() < 0.6:
-                    put(b, "32607", rng.choice(leaf), M(s, Ry(rng.uniform(0, 360))))
+                    put(b, "24866", rng.choice(leaf), M(s, Ry(rng.uniform(0, 360))))
         else:
             F = on(b, F, "3062b", WHITE, rng.uniform(0, 360))
         if rng.random() < 0.45:
-            F = on(b, F, "4073", BLACK)
+            F = on(b, F, OPEN, BLACK)
     for crown in range(2):
         G = on(b, F, "19119", (ORANGE if crown == 0 else YELLOW) if leaf[0] in (YELLOW, ORANGE, BLO) else GREEN, crown * 30)
         for s in slots(G, "19119"):
-            put(b, "32607", rng.choice(leaf), M(s, Ry(rng.uniform(0, 360))))
+            put(b, "24866", rng.choice(leaf), M(s, Ry(rng.uniform(0, 360))))
         if crown == 0:
-            F = on(b, F, "4073", WHITE)
+            F = on(b, F, OPEN, WHITE)
             F = on(b, F, "3062b", WHITE)
     on(b, F, "32607", rng.choice(leaf), 0)
 
 
-def palm(b, rng, x, z, y=0, height=6, lean=6, leaf=GREEN, trunk=RBROWN):
-    """Oasis palm: reddish-brown round trunk with ring plates, a palm top (2566) and drooping
-    small palm leaves (6148) round it; a slight lean by offsetting ring plates."""
+def palm(b, rng, x, z, y=0, height=6, leaf=GREEN, trunk=RBROWN):
+    """Palm: reddish-brown round trunk with ring plates, a palm top (2566) and 4 small palm
+    leaves (6148) slid onto its bars."""
     F = ground(b, x, z, y, rng.uniform(0, 360))
     for i in range(height):
         F = on(b, F, "3062b", trunk)
-        F = on(b, F, "4073", DBROWN if i % 2 else trunk)
-        F = M(F, Rz(lean / height))
+        F = on(b, F, OPEN, DBROWN if i % 2 else trunk)
     G = on(b, F, "2566", trunk)
-    for k in range(5):
-        put(b, "6148", leaf, M(G, T(0, -30, 0), Ry(k * 72 + rng.uniform(-12, 12)), Rz(-20), T(10, 0, 0)))
+    if G is None:
+        return
+    # one small palm leaf slid down each of the palm top's 4 bars, pointing outwards
+    for bx, bz in ((10, 10), (-10, 10), (10, -10), (-10, -10)):
+        ang = math.degrees(math.atan2(-bz, bx)) + rng.uniform(-10, 10)
+        seat(b, "6148", leaf, M(G, T(bx, 0, bz), Ry(ang), T(10, 0, 0)), turns=(0,))
 
 
 def cactus(b, rng, x, z, y=0, height=4, colour=OLIVE, arms=((1, 0), (2, 2))):
     """Mojave saguaro: a column of round bricks; each arm = a SNOT brick in the column, a sideways
     round brick, a 1x1 brick with a side stud turned so the stud points up, then round bricks up."""
-    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), "4073", colour)
+    F = on(b, ground(b, x, z, y, rng.uniform(0, 360)), OPEN, colour)
     for i in range(height):
         arm = [k for (lv, k) in arms if lv == i]
         if arm:
@@ -312,10 +365,10 @@ def cactus(b, rng, x, z, y=0, height=4, colour=OLIVE, arms=((1, 0), (2, 2))):
                 up = U
                 for j in range(1 + (i % 2)):
                     up = on(b, up, "3062b", colour)
-                on(b, up, "4073", colour)
+                on(b, up, OPEN, colour)
         else:
             F = on(b, F, "3062b", colour)
-    on(b, F, "4073", colour)
+    on(b, F, OPEN, colour)
     on(b, ground(b, x + 1, z, y), "32607", OLIVE)
 
 
@@ -335,124 +388,98 @@ def _pos(F):
     return F[:3]
 
 
-def flat(F, yaw=0):
-    """Level frame at F's position (drop its tilt), turned yaw degrees."""
-    return M(T(*_pos(F)), Ry(yaw))
+def stud_frames(piece):
+    """Frames (stud base, local -y = stud direction) of a placed piece's up-facing studs."""
+    from brickscape.core.space import snaps
+    out = []
+    for s in snaps(piece):
+        if s.kind == "cyl" and s.gender == "M" and s.secs and abs(s.secs[-1][1] - 6) < 0.5 \
+                and s.secs[-1][2] <= 4.5 and s.R[1, 1] > 0.99:
+            d, (u0, u1) = (-s.R[:, 1], (0.0, s.length))
+            base = s.pos + d * (u1 - 4)                 # the stud section's base
+            out.append((base[0], base[1], base[2], 1, 0, 0, 0, 1, 0, 0, 0, 1))
+    return out
 
 
-def short_limb(b, F_brick, colour, yaw=0, droop=False):
-    """Short curved arm: a Tail End Section (40379) with its bar end in a 6541's hole. -> tip."""
-    F = M(F_brick, Ry(yaw), T(0, 10, -10), Ry(180), Rx(-40 if droop else 0))
-    put(b, "40379", colour, M(F, T(0, 0, 7.5)))
-    return M(F, T(0, -60, 78))
-
-
-def tail_limb(b, F_brick, colour, yaw=0, end=True, droop=False):
-    """Curved limb out of a 1x1 Technic brick with a hole (6541) whose origin frame is F_brick:
-    a Tail Middle Section (40378) pinned into the hole, curving out ~6 studs and up; optionally a
-    Tail End Section (40379) on its tip. -> tip frame (level)."""
-    F = M(F_brick, Ry(yaw), T(0, 10, -10), Ry(180))     # pin into the hole from the -z face
-    if droop:
-        F = M(F, Rx(-35))                                 # branch dips, then the tip hangs
-    put(b, "40378", colour, F)
-    tip = M(F, T(0, -36, 120), Rx(45))
-    if end:
-        put(b, "40379", colour, tip)
-        tip = M(tip, T(0, -50, 60))
-    return tip
-
-
-def _spray(b, rng, F, leaves, fill=0.35, fill_part="32607"):
-    """A 6x5 leaf branch (2417) on frame F with some leaf plates on its studs for fullness."""
-    C = on(b, F, "2417", rng.choice(leaves), rng.uniform(0, 360))
-    for st, _d in info("2417")["studs"]:
-        if rng.random() < fill:
-            put(b, fill_part, rng.choice(leaves), M(C, T(*st), T(0, -8, 0), Ry(rng.uniform(0, 360))))
-    return C
-
-
-OAK_SIZES = {   # trunk width (1 round / 2 round / 3 log pinwheel), trunk bricks, limbs, crown tiers, crown radius
-    "small":  dict(w=1, h=3, limbs=1, tiers=2, r=1.2, n=4),
-    "medium": dict(w=2, h=4, limbs=2, tiers=2, r=2.0, n=6),
-    "tall":   dict(w=2, h=8, limbs=3, tiers=3, r=1.8, n=6),
-    "fat":    dict(w=3, h=4, limbs=3, tiers=3, r=3.2, n=8),
-    "big":    dict(w=3, h=6, limbs=4, tiers=3, r=3.0, n=8),
+RISERS = ((), ("85861",), ("85861", "85861"), ("3062b",), ("3062b", "85861"), ("3062b", "3062b"))
+OAK_SIZES = {   # trunk: 1 = 1x1 round bricks, 2 = 2x2 round bricks; h = trunk bricks; tiers of crown
+    "small":  dict(w=1, h=3, tiers=2),
+    "medium": dict(w=2, h=4, tiers=2),
+    "tall":   dict(w=2, h=7, tiers=3),
+    "fat":    dict(w=2, h=4, tiers=3, roots=True),
+    "big":    dict(w=2, h=6, tiers=4, roots=True),
 }
 
 
-def oak2(b, rng, x, z, y=0, size="medium", leaves=(GREEN, GREEN, DGREEN), bark=RBROWN, yaw=None):
-    """Oak: flared root base (cheese slopes and
-    log bricks), a trunk (round bricks, or log bricks pinwheeled round a 1x1 core when fat),
-    curved tail-section limbs out of Technic bricks carrying flat 6x5 leaf sprays, and a crown of
-    overlapping 6x5 sprays in rings, one plate apart so they stack on each other.
-    (x, z) = the trunk's centre cell (for w=3 the pinwheel's core)."""
+def oak(b, rng, x, z, y=0, size="medium", leaves=(GREEN, GREEN, DGREEN), bark=RBROWN, yaw=None):
+    """Broadleaf tree in which every part sits on a real stud.
+
+    Trunk of round bricks (1x1 or 2x2); per crown tier a hub plate (2x2 round for thin trunks,
+    4x4 for thick) with 6x5 leaves on its outer studs pointing outwards, then 4x3 leaves and
+    3-leaf plates on the leaves' own studs. Tiers are a trunk brick apart and shrink upwards;
+    any leaf that would clash with another is turned or left out (see put/FIT).
+    (x, z) = trunk cell (min corner of the 2x2 trunk for w=2)."""
     P = OAK_SIZES[size]
     yaw = rng.uniform(0, 360) if yaw is None else yaw
-    w, H = P["w"], P["h"] + rng.choice((0, 0, 1))
-    # roots: cheese slopes round the base, a few 2x1 45s pointing out on fat trunks
-    rad = {1: 1, 2: 1, 3: 2}[w]
-    for dx in range(-rad, rad + 1 + (w == 2)):
-        for dz in range(-rad, rad + 1 + (w == 2)):
-            inside = (w == 1 and (dx, dz) == (0, 0)) or (w == 2 and dx in (0, 1) and dz in (0, 1)) or \
-                     (w == 3 and abs(dx) <= 1 and abs(dz) <= 1)
-            if inside:
-                continue
-            ring = max(abs(dx - (0.5 if w == 2 else 0)), abs(dz - (0.5 if w == 2 else 0)))
-            if ring <= rad + 0.5 and rng.random() < (0.75 if w > 1 else 0.5):
-                d = "N" if abs(dz) >= abs(dx) and dz < 0 else "S" if abs(dz) >= abs(dx) else "W" if dx < 0 else "E"
-                p = b.put("54200", bark, x + dx, 0 + y, z + dz, spin={"N": "N", "S": "S", "E": "E", "W": "W"}[d])
-                p.soft = p.free = True   # (on a rise edge a root may overhang a plate)
-    # trunk
-    core = ground(b, x, z, y, 0) if w != 2 else M(T(b.X(x) + 20, -8 * y, b.Z(z) + 20), Ry(0))
-    F = core
-    limb_at = sorted(rng.sample(range(1, H), min(P["limbs"], H - 1)))
-    for lv in range(H):
-        if w == 1:
-            if lv in limb_at:
-                F = on(b, F, "6541", bark, rng.uniform(0, 360))
-                tip = tail_limb(b, F, bark, rng.uniform(0, 360), end=False)
-                _spray(b, rng, flat(tip), leaves)
-            else:
-                F = on(b, F, "3062b", bark)
-        elif w == 2:
-            F = on(b, F, "3941", bark if rng.random() < 0.75 else DBROWN, rng.choice((0, 45)))
-            if rng.random() < 0.35:                       # bark ring
-                F = on(b, F, "4032a", DBROWN if rng.random() < .5 else bark, rng.uniform(0, 90))
-            if lv in limb_at:            # limb from a 6541 against the trunk side (on a side plate)
-                ang = rng.uniform(0, 360)
-                G = M(F, Ry(ang), T(0, 24, -30))
-                put(b, "6541", bark, M(G, T(0, -24, 0)))
-                tip = tail_limb(b, M(G, T(0, -24, 0)), bark, 0, end=rng.random() < 0.4)
-                _spray(b, rng, flat(tip), leaves)
-        else:                            # log pinwheel round a 1x1 core
-            Fc = M(core, T(0, -24 * lv, 0))
-            for k in range(4):
-                put(b, "30136", bark if rng.random() < 0.8 else DBROWN, M(Fc, Ry(90 * k), T(-10, -24, -20)))
-            if lv in limb_at:
-                put(b, "6541", bark, M(Fc, T(0, -24, 0)))
-                tip = tail_limb(b, M(Fc, T(0, -24, 0)), bark, rng.uniform(0, 360), end=rng.random() < 0.6)
-                _spray(b, rng, flat(tip), leaves)
-            else:
-                put(b, "3005", bark, M(Fc, T(0, -24, 0)))
-            F = M(core, T(0, -24 * (lv + 1), 0))
-    # crown: rings of 6x5 sprays, one plate apart, getting smaller towards the top
-    top = F
+    w = P["w"]
+    F = ground(b, x, z, y) if w == 1 else M(T(b.X(x) + 20, -8 * y, b.Z(z) + 20))
+    trunk = "3062b" if w == 1 else "3941"
+    if P.get("roots"):                              # root flare: cheese slopes round the trunk base
+        for dx in range(-1, 3):
+            for dz in range(-1, 3):
+                if (dx in (0, 1) and dz in (0, 1)) or (dx in (-1, 2) and dz in (-1, 2)) or rng.random() < 0.3:
+                    continue
+                d = "N" if dz < 0 else "S" if dz > 1 else "W" if dx < 0 else "E"
+                b.put("54200", bark, x + dx, y, z + dz, spin=d)
+    for lv in range(P["h"]):
+        F = on(b, F, trunk, bark if rng.random() < 0.8 else DBROWN, 0 if w == 2 else rng.uniform(0, 360))
     for t in range(P["tiers"]):
-        n = max(3, P["n"] - 2 * t)
-        r = P["r"] * (1 - 0.3 * t)
-        base = M(top, T(0, -8 * (2 * t + 1), 0))
-        for k in range(n):
-            a = math.radians(360 * k / n + yaw + t * 23 + rng.uniform(-15, 15))
-            rr = r * 20 * rng.uniform(0.8, 1.15)
-            S = M(base, T(rr * math.cos(a), -8 * (k % 2), rr * math.sin(a)))
-            _spray(b, rng, flat(S), leaves, fill=0.45 if t == 0 else 0.6)
-        put(b, "4073", bark, M(base, T(0, 8, 0)))   # stem plate between tiers
-    _spray(b, rng, flat(M(top, T(0, -8 * (2 * P["tiers"] + 1), 0))), leaves, fill=0.6)
+        hub_part = "4032a" if (w == 1 or t == P["tiers"] - 1) else "3031"
+        hub = put(b, hub_part, rng.choice(leaves), M(F, T(0, -8, 0)))
+        if hub is None:
+            break
+        cx, cz = F[0], F[2]
+        nxt = None
+        if t < P["tiers"] - 1:                       # trunk continues above the hub (placed first,
+            if hub_part == "3031":                   # so the leaves fit round it)
+                nxt = on(b, M(F, T(0, -8, 0)), "3941", bark)
+                for _ in range(rng.choice((0, 1))):
+                    nxt = on(b, nxt, "3941", bark)
+            else:
+                hs = stud_frames(hub)
+                nxt = on(b, rng.choice(hs), "3062b", bark) if hs else None
+        frames = stud_frames(hub)
+        frames.sort(key=lambda G: -((G[0] - cx) ** 2 + (G[2] - cz) ** 2))
+        placed = []
+        for G in frames[:8]:
+            ang = math.degrees(math.atan2(G[0] - cx, -(G[2] - cz))) if abs(G[0] - cx) + abs(G[2] - cz) > 1 \
+                else rng.uniform(0, 360)
+            part = "2417" if t < P["tiers"] - 1 else "2423"
+            for riser in rng.sample(RISERS, len(RISERS)):     # stagger leaf heights
+                n0 = len(b.pieces)
+                R = G
+                for r in riser:
+                    R = on(b, R, r, bark if r == "3062b" else rng.choice(leaves))
+                if R is not None and on(b, R, part, rng.choice(leaves), -ang + 180 + rng.uniform(-25, 25)):
+                    placed.append(b.pieces[-1])
+                    break
+                while len(b.pieces) > n0:
+                    b.pop()
+        for leaf in placed:                          # second layer on the leaves' studs
+            fr = stud_frames(leaf)
+            for G in rng.sample(fr, min(3, len(fr))):
+                on(b, G, rng.choice(("2423", "32607", "32607")), rng.choice(leaves), rng.uniform(0, 360))
+        if nxt is None:
+            break
+        F = nxt
+
+
+oak2 = oak
 
 
 # ================================================================= botanical parts (2026-11-25)
 # From the Canada First Bricks botanical list + unusual GoBricks parts. All grow from one stud.
-def _base(b, rng, x, z, y, part="4073", colour=DGREEN):
+def _base(b, rng, x, z, y, part=OPEN, colour=DGREEN):
     return on(b, ground(b, x, z, y, rng.uniform(0, 360)), part, colour)
 
 
@@ -473,45 +500,21 @@ def tooth_flower(b, rng, x, z, y=0, petal=WHITE, centre=YELLOW, stem=GREEN):
     F = on(b, F, "32607", stem, rng.uniform(0, 360))
     for i in range(4):
         F = on(b, F, "49668", petal, 90 * i + 45 * (i % 2) + rng.uniform(-8, 8))
-    on(b, F, "4073", centre)
-
-
-def frond_fern(b, rng, x, z, y=0, colour=GREEN, n=3):
-    """Big fern: feathered wings (11100) as fronds round a round brick, leaning out."""
-    F = _base(b, rng, x, z, y, "3062b", DGREEN)
-    G = on(b, F, "4073", DGREEN)
-    for k in range(n):
-        put(b, "11100", colour, M(G, Ry(360 * k / n + rng.uniform(-20, 20)), Rx(-25), T(0, -10, 0)))
+    on(b, F, OPEN, centre)
 
 
 def plume_grass(b, rng, x, z, y=0, colour=OLIVE, n=1):
     """Tall grass / reeds: triple plume (64647) or feather plume (30126) on a round plate."""
-    F = _base(b, rng, x, z, y, "4073", DGREEN)
+    F = _base(b, rng, x, z, y, OPEN, DGREEN)
     on(b, F, "64647" if rng.random() < .6 else "30126", colour, rng.uniform(0, 360))
 
 
 def swirl_topiary(b, rng, x, z, y=0, colour=DGREEN, trunk=RBROWN, h=2):
     """Clipped topiary / pine sapling: a round-brick trunk and swirl-top round plates (15470)."""
-    F = _base(b, rng, x, z, y, "4073", trunk)
+    F = _base(b, rng, x, z, y, OPEN, trunk)
     for _ in range(h):
         F = on(b, F, "3062b", trunk)
     on(b, F, "15470", colour)
-
-
-def beehive_conifer(b, rng, x, z, y=0, colour=DGREEN, trunk=RBROWN, tiers=2):
-    """Small conifer: brown round brick, stacked beehive cones (35574, ridged 2x2), a 1x1 cone tip."""
-    F = M(T(b.X(x) + 20, -8 * y, b.Z(z) + 20), Ry(rng.uniform(0, 360)))
-    F = on(b, F, "3941", trunk)
-    for _ in range(tiers):
-        F = on(b, F, "35574", colour, rng.uniform(0, 90))
-    on(b, F, "59900", colour)
-
-
-def spine_fern(b, rng, x, z, y=0, colour=DGREEN, n=3):
-    """Spiky fronds: Barraki spines / spiked vine (55236) radiating from a round plate."""
-    F = _base(b, rng, x, z, y, "3062b", colour)
-    for k in range(n):
-        put(b, "55236", colour, M(F, Ry(360 * k / n + rng.uniform(-15, 15)), Rz(25)))
 
 
 def coral_bush(b, rng, x, z, y=0, colour=OLIVE, leaf=None):
@@ -526,25 +529,18 @@ def coral_bush(b, rng, x, z, y=0, colour=OLIVE, leaf=None):
 
 def curl_vine(b, rng, x, z, y=0, colour=GREEN):
     """Curly tendril / fiddlehead: the bent flexible whip (88704) on a round plate."""
-    F = _base(b, rng, x, z, y, "4073", DGREEN)
+    F = _base(b, rng, x, z, y, OPEN, DGREEN)
     put(b, "88704", colour, M(F, Ry(rng.uniform(0, 360))))
 
 
 def crystal_succulent(b, rng, x, z, y=0, colour=SGREEN, n=3):
     """Succulent cluster: 1x1 5-point crystals (30385) on round plates, in a little clump."""
     for i in range(n):
-        F = on(b, ground(b, x + (i % 2), z + (i // 2), y, rng.uniform(0, 360)), "4073", colour)
+        F = on(b, ground(b, x + (i % 2), z + (i // 2), y, rng.uniform(0, 360)), OPEN, colour)
         put(b, "30385", colour, F)
 
 
-def sword_clump(b, rng, x, z, y=0, colour=DGREEN):
-    """Swordleaf (10884) clipped on a 3L bar in a round brick: a big arching leaf plant (hosta)."""
-    F = _base(b, rng, x, z, y, "3062b", DGREEN)
-    for k in range(2):
-        put(b, "10884", colour, M(F, T(0, -8 - 10 * k, 0), Ry(90 * k + rng.uniform(-20, 20)), Rx(-20), T(0, -30, 0)))
-
-
-def specimen(b, rng, x, z, part, colour, y=0, base="4073", base_colour=DGREEN):
+def specimen(b, rng, x, z, part, colour, y=0, base=OPEN, base_colour=DGREEN):
     """One plant part on its own round plate (for the parts catalogue rows)."""
     F = _base(b, rng, x, z, y, base, base_colour)
     if part in ("3565", "15469", "4727", "4728", "2682a", "35473"):

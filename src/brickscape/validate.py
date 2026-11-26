@@ -5,7 +5,8 @@ Checks (each reported separately; the report never claims more than what was che
   source      every part and colour exists in the chosen part source (LEGO or GoBricks)
   rotations   every rotation is a proper rotation (no mirror, no scale)
   duplicates  no two identical parts in the same place
-  collisions  no two parts' solids overlap (real part shapes, see core/geom.py)
+  collisions  no two parts' solids overlap (real part shapes, see core/geom.py); leaves may
+              rest on each other up to geom.FLEX_PEN, since they bend
   connected   every part is held by a real connection, and all parts connect to the base
 """
 import collections, itertools
@@ -44,7 +45,7 @@ def collisions(b, joined=()):
         for k in (i, j):
             if k not in boxes:
                 boxes[k] = geom.world_boxes(P[k].part, P[k].M)
-        if geom.collide(boxes[i], boxes[j]):
+        if geom.collide(boxes[i], boxes[j], geom.pen_for(P[i].part, P[j].part)):
             out.append((i, j))
     return out
 
@@ -182,3 +183,32 @@ def validate(b, source="lego"):
         cnt = collections.Counter((p.part, p.color) for i, p in enumerate(P) if i not in b.roots)
         rep["source"] = catalog.get(source).check(cnt)
     return rep
+
+
+def repair(b, max_rounds=5):
+    """Remove decorative parts (plants, leaves, flowers) that are loose or clash, and anything
+    that only hung from them. Structural parts are never removed: their problems stay in the
+    report. -> list of removed (part, colour) for the report."""
+    from brickscape.terrain.greenery import decorative
+    removed = []
+    for _ in range(max_rounds):
+        edges, _ = connections(b)
+        joined_ = {e for e, t in edges.items() if t != "stud"}
+        reach = components(len(b.pieces), edges, b.roots)
+        bad = {i for i in range(len(b.pieces)) if i not in reach}
+        for i, j in collisions(b, joined_):
+            for k in (j, i):                   # drop the later decorative one
+                if k not in b.roots and decorative(b.pieces[k].part):
+                    bad.add(k)
+                    break
+        bad = {i for i in bad if i not in b.roots and (decorative(b.pieces[i].part) or i not in reach)}
+        if not bad:
+            break
+        removed += [(b.pieces[i].part, b.pieces[i].color) for i in sorted(bad)]
+        keep = [p for i, p in enumerate(b.pieces) if i not in bad]
+        roots = {keep.index(b.pieces[i]) for i in b.roots}
+        b.pieces, b.roots, b._grid = [], roots, {}
+        for p in keep:
+            b.pieces.append(p)
+            b._index(len(b.pieces) - 1)
+    return removed

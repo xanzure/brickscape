@@ -1,10 +1,10 @@
 """Part solids for collision tests.
 
 Each part's mesh (from the LDraw library) is ray-cast along its own vertical axis on a
-2.5 LDU column grid. The hits along each ray are paired into solid runs (enter / exit), so
+1.25 LDU column grid. The hits along each ray are paired into solid runs (enter / exit), so
 hollow undersides, tubes and slopes come out right. Neighbouring columns with the same runs
 are merged into boxes. A part's solid is then a few dozen boxes in its own frame; two placed
-parts collide when any pair of their (slightly shrunk) boxes overlaps.
+parts collide when some pair of their boxes interpenetrates deeper than PEN.
 
 Studs are part of the solid: a stud inside an anti-stud lands in empty space, a stud pushed
 into solid plastic is a collision.
@@ -14,9 +14,10 @@ import numpy as np
 from brickscape.config import DATA
 from brickscape.core.brick import _find
 
-RES = 2.5          # LDU column spacing
-SHRINK = 0.6       # LDU taken off every box face before testing (touching faces are fine)
-_DISK = os.path.join(DATA, "solids")
+RES = 1.25         # LDU column spacing
+PEN = 0.8          # LDU: two solids clash when they interpenetrate deeper than this (touching is fine;
+                   # covers the RES/2 column error round studs and holes)
+_DISK = os.path.join(DATA, "solids-%g" % RES)
 
 
 def _tris(name, M=np.eye(4), out=None, depth=0):
@@ -54,9 +55,19 @@ def _runs(ys):
     return tuple((float(ys[i]), float(ys[i + 1])) for i in range(0, len(ys), 2))
 
 
+FLAT = ("3811", "3867", "6098", "4186", "3857", "3645", "41539", "3036", "3033", "3958", "3035",
+        "3032", "3031", "3030", "3029", "3028", "3027", "3026", "92438", "91405")
+
+
 @functools.lru_cache(None)
 def solid(part):
-    """Boxes (n x 6 array: x0, y0, z0, x1, y1, z1) in the part's own frame."""
+    """Boxes (n x 6 array: x0, y0, z0, x1, y1, z1) in the part's own frame.
+    Baseplates and big plates are one box (their body without studs): their mesh is huge and
+    nothing nests into them except through studs."""
+    if part in FLAT:
+        from brickscape.core.brick import info
+        i = info(part)
+        return np.array([[*i["lo"], *i["hi"]]])
     os.makedirs(_DISK, exist_ok=True)
     cache = os.path.join(_DISK, part + ".pkl")
     if os.path.exists(cache):
@@ -135,12 +146,30 @@ def world_boxes(part, M):
     R = np.array(M[3:]).reshape(3, 3)
     t = np.array(M[:3])
     c = (B[:, :3] + B[:, 3:]) / 2
-    hs = np.maximum((B[:, 3:] - B[:, :3]) / 2 - SHRINK, 0)
+    hs = (B[:, 3:] - B[:, :3]) / 2
     return c @ R.T + t, hs, R
 
 
-def collide(A, B):
-    """True if any box of placed part A overlaps any box of B (separating-axis test)."""
+FLEX_PEN = 4.0     # LDU allowed between two flexible plant parts (leaves bend and rest on each other)
+FLEX_WORDS = ("leaves", "leaf", "plant", "flower", "grass", "fern", "vine", "stem", "frond")
+
+
+@functools.lru_cache(None)
+def flexible(part):
+    from brickscape.core.brick import info
+    d = info(part)["desc"].lower()
+    return any(w in d for w in FLEX_WORDS)
+
+
+def pen_for(a, b):
+    """Penetration allowed between two parts (by part id)."""
+    return FLEX_PEN if flexible(a) and flexible(b) else PEN
+
+
+def collide(A, B, pen=None):
+    """True if some box of placed part A and some box of B interpenetrate deeper than PEN along
+    every separating axis (separating-axis test with a penetration threshold)."""
+    pen = PEN if pen is None else pen
     ca, ha, Ra = A
     cb, hb, Rb = B
     keep_a, keep_b = (ha > 0).all(1), (hb > 0).all(1)
@@ -150,7 +179,7 @@ def collide(A, B):
     # coarse sphere test first
     ra, rb = np.linalg.norm(ha, axis=1), np.linalg.norm(hb, axis=1)
     D = cb[None, :, :] - ca[:, None, :]
-    near = np.linalg.norm(D, axis=2) < ra[:, None] + rb[None, :]
+    near = np.linalg.norm(D, axis=2) < ra[:, None] + rb[None, :] - pen
     ia, ib = np.nonzero(near)
     if not len(ia):
         return False
@@ -168,7 +197,7 @@ def collide(A, B):
         L = L / n
         pa = (HA * np.abs(Ra.T @ L)).sum(1)
         pb = (HB * np.abs(Rb.T @ L)).sum(1)
-        sep |= np.abs(D @ L) > pa + pb
+        sep |= np.abs(D @ L) > pa + pb - pen
         if sep.all():
             return False
     return bool((~sep).any())

@@ -119,7 +119,7 @@ UP = {"up": SPIN["N"],
 
 
 class Piece:
-    __slots__ = ("part", "color", "M", "step", "lo", "hi", "note", "soft", "free")
+    __slots__ = ("part", "color", "M", "step", "lo", "hi", "note", "soft", "free", "_boxes", "_snaps")
 
     def line(self):
         x, y, z = (round(v, 3) for v in self.M[:3])
@@ -160,6 +160,7 @@ class Build:
         p.lo = (mn[0] + tx, mn[1] + ty, mn[2] + tz)
         p.hi = (mx[0] + tx, mx[1] + ty, mx[2] + tz)
         self.pieces.append(p)
+        self._index(len(self.pieces) - 1)
         return p
 
     def attach(self, part, color, x, z, y, spin="N", up="up", note="", soft=True, free=False):
@@ -183,7 +184,43 @@ class Build:
         p.lo = tuple(min(c[i] for c in cs) for i in range(3))
         p.hi = tuple(max(c[i] for c in cs) for i in range(3))
         self.pieces.append(p)
+        self._index(len(self.pieces) - 1)
         return p
+
+    # ------------------------------------------------------------- spatial index
+    CELL = 40
+
+    def _index(self, i):
+        if not hasattr(self, "_grid"):
+            self._grid = {}
+        p = self.pieces[i]
+        p._boxes = p._snaps = None
+        C = self.CELL
+        for gx in range(int(p.lo[0] // C), int(p.hi[0] // C) + 1):
+            for gy in range(int(p.lo[1] // C), int(p.hi[1] // C) + 1):
+                for gz in range(int(p.lo[2] // C), int(p.hi[2] // C) + 1):
+                    self._grid.setdefault((gx, gy, gz), []).append(i)
+
+    def near(self, i, pad=1.0):
+        """Indices of pieces whose bounding boxes overlap piece i's."""
+        p, C, out = self.pieces[i], self.CELL, set()
+        for gx in range(int(p.lo[0] // C), int(p.hi[0] // C) + 1):
+            for gy in range(int(p.lo[1] // C), int(p.hi[1] // C) + 1):
+                for gz in range(int(p.lo[2] // C), int(p.hi[2] // C) + 1):
+                    for j in self._grid.get((gx, gy, gz), ()):
+                        if j != i and j < len(self.pieces) and self.pieces[j] is not None:
+                            q = self.pieces[j]
+                            if all(p.lo[k] + pad < q.hi[k] and q.lo[k] + pad < p.hi[k] for k in range(3)):
+                                out.add(j)
+        return out
+
+    def pop(self):
+        """Remove the last placed piece."""
+        i = len(self.pieces) - 1
+        for ids in self._grid.values():
+            if ids and ids[-1] == i:
+                ids.pop()
+        return self.pieces.pop()
 
     def step(self):
         self.step_no += 1

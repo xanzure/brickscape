@@ -27,7 +27,7 @@ SUBSTITUTE = {"2339": "76768",      # Arch 1x5x4 -> Arch 1x5x4 irregular bow
               "4589": "59900",      # Cone 1x1 -> Cone 1x1 with top groove
               "92947": "3941",      # Round 2x2 with grille -> Round 2x2 with axle hole
               "87620": None,        # Brick 2x2 facet: not sold (use 2x2 corner bricks / slopes)
-              "4150": "14769", "85861": "4073", "26601": "2450", "11212": "3031"}
+              "4150": "14769", "26601": "2450", "11212": "3031"}
 
 
 def _load(name, default):
