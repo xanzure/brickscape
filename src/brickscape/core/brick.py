@@ -166,13 +166,21 @@ class Build:
     def attach(self, part, color, x, z, y, spin="N", up="up", note="", soft=True, free=False):
         """Place by the part's origin: origin at stud-grid point (x, z) (use .5 for a
         stud centre), bottom face at height y. For plants and other one-stud parts."""
-        R = _mul(UP[up], SPIN[spin])
-        yb = info(part)["bottom"][0]
-        off = _dir(R, (0, yb, 0))
-        M = (self.X(x) - off[0], self.Y(y) - off[1], self.Z(z) - off[2], *R[3:])
-        p = self.raw(part, color, M, note)
-        p.soft, p.free = soft, free
-        return p
+        from brickscape.terrain.greenery import decorative, FIT
+        from brickscape.core.space import fits
+        deco = FIT and decorative(part)
+        spins = [spin] + [s for s in "NESW" if s != spin] if deco else [spin]
+        for sp in spins:
+            R = _mul(UP[up], SPIN[sp])
+            yb = info(part)["bottom"][0]
+            off = _dir(R, (0, yb, 0))
+            M = (self.X(x) - off[0], self.Y(y) - off[1], self.Z(z) - off[2], *R[3:])
+            p = self.raw(part, color, M, note)
+            p.soft, p.free = soft, free
+            if not deco or fits(self, len(self.pieces) - 1):
+                return p
+            self.pop()
+        return None     # a plant that fits nowhere here is left out
 
     def raw(self, part, color, M, note=""):
         p = Piece()

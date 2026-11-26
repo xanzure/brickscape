@@ -76,7 +76,14 @@ OPEN = "85861"      # 1x1 round plate with OPEN stud: bar-ended stems need the h
 FIT = True          # decorative parts that clash are turned about their stud, or left out
 
 
+PLANT_PARTS = {"33291", "98138", "30385", "49668", "15470", "49577", "88704", "30126", "64647"}
+
+
+@functools.lru_cache(None)
 def decorative(part):
+    """Plants and other dressing: may be turned or left out when they don't fit."""
+    if part in PLANT_PARTS:
+        return True
     d = info(part)["desc"].lower()
     return any(w in d for w in ("plant", "leaf", "leaves", "flower", "grass", "vine", "stem", "bush"))
 
