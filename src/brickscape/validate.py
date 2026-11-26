@@ -185,10 +185,18 @@ def validate(b, source="lego"):
     return rep
 
 
+def _removable(k, edges, reach, roots):
+    """True if removing piece k leaves everything else still connected to the base."""
+    sub = {e: t for e, t in edges.items() if k not in e}
+    r2 = components(max(max(e) for e in edges) + 1 if edges else 0, sub, roots)
+    return all(i in r2 for i in reach if i != k)
+
+
 def repair(b, max_rounds=5):
-    """Remove decorative parts (plants, leaves, flowers) that are loose or clash, and anything
-    that only hung from them. Structural parts are never removed: their problems stay in the
-    report. -> list of removed (part, colour) for the report."""
+    """Remove parts that make a build unbuildable when removing them costs nothing: loose
+    parts, and in each clashing pair the later part if it is decorative (plants, leaves,
+    flowers) or holds nothing else up. Anything else stays in the report as a failure.
+    -> list of removed (part, colour) for the report."""
     from brickscape.terrain.greenery import decorative
     removed = []
     for _ in range(max_rounds):
@@ -196,12 +204,18 @@ def repair(b, max_rounds=5):
         joined_ = {e for e, t in edges.items() if t != "stud"}
         reach = components(len(b.pieces), edges, b.roots)
         bad = {i for i in range(len(b.pieces)) if i not in reach}
+        deg = collections.Counter()
+        for (i, j) in edges:
+            deg[i] += 1
+            deg[j] += 1
         for i, j in collisions(b, joined_):
-            for k in (j, i):                   # drop the later decorative one
-                if k not in b.roots and decorative(b.pieces[k].part):
+            for k in (j, i):                   # drop the later decorative one, or a part that
+                if k in b.roots:               # holds nothing up (one connection at most)
+                    continue
+                if decorative(b.pieces[k].part) or deg[k] <= 1 or _removable(k, edges, reach, b.roots):
                     bad.add(k)
                     break
-        bad = {i for i in bad if i not in b.roots and (decorative(b.pieces[i].part) or i not in reach)}
+        bad = {i for i in bad if i not in b.roots}
         if not bad:
             break
         removed += [(b.pieces[i].part, b.pieces[i].color) for i in sorted(bad)]
