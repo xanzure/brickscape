@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="334" font-family="Helvetica,Arial,sans-serif" font-size="13">
+<rect width="100%" height="100%" fill="white"/><text x="12" y="24" font-size="15" font-weight="bold">Intersecting part pairs found by the strict checker (before repair)</text>
+<text x="12" y="70.0">terraced hill</text>
+<rect x="150" y="43" width="340.0" height="20" fill="#9aa3ad" rx="3"/>
+<text x="496.0" y="57">89 before</text>
+<rect x="150" y="69" width="34.4" height="20" fill="#2f6fb0" rx="3"/>
+<text x="190.4" y="83">9 after</text>
+<text x="12" y="136.0">rolling hills</text>
+<rect x="150" y="109" width="240.7" height="20" fill="#9aa3ad" rx="3"/>
+<text x="396.7" y="123">63 before</text>
+<rect x="150" y="135" width="49.7" height="20" fill="#2f6fb0" rx="3"/>
+<text x="205.7" y="149">13 after</text>
+<text x="12" y="202.0">rock cliff</text>
+<rect x="150" y="175" width="103.1" height="20" fill="#9aa3ad" rx="3"/>
+<text x="259.1" y="189">27 before</text>
+<rect x="150" y="201" width="0.0" height="20" fill="#2f6fb0" rx="3"/>
+<text x="156.0" y="215">0 after</text>
+<text x="12" y="268.0">river</text>
+<rect x="150" y="241" width="19.1" height="20" fill="#9aa3ad" rx="3"/>
+<text x="175.1" y="255">5 before</text>
+<rect x="150" y="267" width="15.3" height="20" fill="#2f6fb0" rx="3"/>
+<text x="171.3" y="281">4 after</text>
+</svg>

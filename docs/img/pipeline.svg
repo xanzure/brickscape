@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="150" font-family="Helvetica,Arial,sans-serif" font-size="13">
+  <rect width="100%" height="100%" fill="white"/>
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker></defs>
+  <g>
+    <rect x="10" y="40" width="120" height="60" rx="10" fill="#eef4fb" stroke="#2f6fb0"/>
+    <text x="70" y="66" text-anchor="middle" font-weight="bold">AI client</text>
+    <text x="70" y="84" text-anchor="middle" fill="#555">JSON build plan</text>
+    <rect x="170" y="40" width="130" height="60" rx="10" fill="#eef4fb" stroke="#2f6fb0"/>
+    <text x="235" y="66" text-anchor="middle" font-weight="bold">compile</text>
+    <text x="235" y="84" text-anchor="middle" fill="#555">generators, height map</text>
+    <rect x="340" y="40" width="130" height="60" rx="10" fill="#eef4fb" stroke="#2f6fb0"/>
+    <text x="405" y="66" text-anchor="middle" font-weight="bold">repair</text>
+    <text x="405" y="84" text-anchor="middle" fill="#555">drop misfits, real colours</text>
+    <rect x="510" y="40" width="130" height="60" rx="10" fill="#fdf3e3" stroke="#c9a227"/>
+    <text x="575" y="66" text-anchor="middle" font-weight="bold">validate</text>
+    <text x="575" y="84" text-anchor="middle" fill="#555">shapes + connections</text>
+    <rect x="680" y="10" width="170" height="130" rx="10" fill="#eaf6ee" stroke="#2f9e5b"/>
+    <text x="765" y="36" text-anchor="middle" font-weight="bold">deliverables</text>
+    <text x="765" y="60" text-anchor="middle" fill="#333">Studio .io file</text>
+    <text x="765" y="80" text-anchor="middle" fill="#333">4-view renders</text>
+    <text x="765" y="100" text-anchor="middle" fill="#333">parts list + BrickLink XML</text>
+    <text x="765" y="120" text-anchor="middle" fill="#333">PDF instructions</text>
+  </g>
+  <g stroke="#555" stroke-width="2" marker-end="url(#a)">
+    <line x1="130" y1="70" x2="168" y2="70"/><line x1="300" y1="70" x2="338" y2="70"/>
+    <line x1="470" y1="70" x2="508" y2="70"/><line x1="640" y1="70" x2="678" y2="70"/>
+  </g>
+  <text x="430" y="135" text-anchor="middle" fill="#888">report back to the client: what was removed, recoloured, or still fails</text>
+</svg>
