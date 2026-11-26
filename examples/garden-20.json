@@ -1,0 +1,9 @@
+{"name": "pond garden", "board": {"width": 20, "depth": 20}, "seed": 4,
+ "ops": [
+  {"op": "water", "area": {"ellipse": [13, 13, 5, 4], "rough": 0.4}},
+  {"op": "path", "points": [[0, 4], [8, 6], [10, 19]], "width": 2, "style": "cobble"},
+  {"op": "block", "area": {"rect": [1, 12, 6, 18]}, "height": 2, "colour": "reddish brown", "top": "studs", "top_colour": "reddish brown"},
+  {"op": "scatter", "area": {"rect": [1, 12, 6, 18]}, "kinds": ["flower", "flowers"], "density": 0.5},
+  {"op": "tree", "kind": "birch", "at": [17, 3]},
+  {"op": "scatter", "area": {"rect": [0, 0, 20, 20]}, "kinds": ["tuft", "reeds", "bush"], "density": 0.06}
+ ]}
