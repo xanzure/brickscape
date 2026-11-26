@@ -166,29 +166,44 @@ def pen_for(a, b):
     return FLEX_PEN if flexible(a) and flexible(b) else PEN
 
 
+def _aabb(c, h, R):
+    e = h @ np.abs(R).T
+    return c - e, c + e
+
+
+def _square(R):
+    """True if R only permutes / flips axes (no odd angles)."""
+    return np.allclose(np.abs(R), np.round(np.abs(R)), atol=1e-6)
+
+
 def collide(A, B, pen=None):
-    """True if some box of placed part A and some box of B interpenetrate deeper than PEN along
-    every separating axis (separating-axis test with a penetration threshold)."""
+    """True if some box of placed part A and some box of B interpenetrate deeper than `pen`
+    (default PEN) along every separating axis. World-AABB prefilters first; the full
+    separating-axis test only for parts at odd angles."""
     pen = PEN if pen is None else pen
     ca, ha, Ra = A
     cb, hb, Rb = B
-    keep_a, keep_b = (ha > 0).all(1), (hb > 0).all(1)
-    ca, ha, cb, hb = ca[keep_a], ha[keep_a], cb[keep_b], hb[keep_b]
     if not len(ca) or not len(cb):
         return False
-    # coarse sphere test first
-    ra, rb = np.linalg.norm(ha, axis=1), np.linalg.norm(hb, axis=1)
-    D = cb[None, :, :] - ca[:, None, :]
-    near = np.linalg.norm(D, axis=2) < ra[:, None] + rb[None, :] - pen
-    ia, ib = np.nonzero(near)
-    if not len(ia):
+    la, ua = _aabb(ca, ha, Ra)
+    lb, ub = _aabb(cb, hb, Rb)
+    # keep only boxes that reach into the other part's overall bounds
+    ka = ((la < ub.max(0) - pen) & (ua > lb.min(0) + pen)).all(1)
+    kb = ((lb < ua.max(0) - pen) & (ub > la.min(0) + pen)).all(1)
+    if not ka.any() or not kb.any():
         return False
-    D = D[ia, ib]
+    ca, ha, la, ua = ca[ka], ha[ka], la[ka], ua[ka]
+    cb, hb, lb, ub = cb[kb], hb[kb], lb[kb], ub[kb]
+    ov = ((la[:, None, :] < ub[None, :, :] - pen) & (lb[None, :, :] < ua[:, None, :] - pen)).all(2)
+    if not ov.any():
+        return False
+    if _square(Ra) and _square(Rb):
+        return True                       # axis-aligned boxes: the AABB test is exact
+    ia, ib = np.nonzero(ov)
+    D = cb[ib] - ca[ia]
     HA, HB = ha[ia], hb[ib]
     axes = [Ra[:, k] for k in range(3)] + [Rb[:, k] for k in range(3)]
-    same = np.allclose(np.abs(Ra.T @ Rb), np.round(np.abs(Ra.T @ Rb)), atol=1e-6)
-    if not same:
-        axes += [np.cross(Ra[:, i], Rb[:, j]) for i in range(3) for j in range(3)]
+    axes += [np.cross(Ra[:, i], Rb[:, j]) for i in range(3) for j in range(3)]
     sep = np.zeros(len(ia), bool)
     for L in axes:
         n = np.linalg.norm(L)

@@ -221,7 +221,9 @@ brickscape check some_model.io           # validate any model
 - Connection checking is only as complete as the LDCad data. Parts without detailed data get
   studs on top and anti-studs under their bottom face, and the report lists them.
 - No gravity or clutch-strength check.
-- Studio `.io` export writes LDraw colours (`model.ldr`); Studio converts them on open.
+- Studio `.io` export writes the LDraw model (`model.ldr`, LDraw colours) in Studio's encrypted
+  zip format; it round-trips through Python's zip reader but has not yet been tested in every
+  Studio version.
 
 ## Credits
 
