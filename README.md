@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo/logo.png" alt="BrickScape spelled in LEGO bricks on a green baseplate with trees, rocks and a stream" width="720"></p>
+
 # brickscape
 
 Landscape, but for bricks. An MCP server that lets an AI design LEGO builds that can actually
