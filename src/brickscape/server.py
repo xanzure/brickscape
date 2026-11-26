@@ -52,6 +52,8 @@ held by a real connection (studs, bars, clips, hinges, pins) down to the basepla
 1. Write a short brief: subject, size, what goes where, palette.
 2. `build` with a plan. Read the report: it lists anything removed or still failing.
 3. `render` and look at all 4 views. Fix what looks wrong by changing the plan, build again.
+   Do at least one improvement round: check the brief's size, part-count and colour limits,
+   fill empty areas with detail, and make the main subject stand out.
 4. Deliver: `export` (Studio .io), `parts_list`, and `instructions` if asked.
 
 ## Coordinates
@@ -213,7 +215,9 @@ def build(plan: str, source: str = "lego") -> str:
     json.dump({"checks": r["checks"], "connections": r["connections"], "removed": len(removed),
                "recoloured": recol, "source": r["source"], "log": comp.log},
               open(os.path.join(d, "report.json"), "w"), indent=1, default=str)
-    return _report(r, removed, recol) + f"\nsaved: {os.path.join(d, 'model.ldr')}\n" + "\n".join(comp.log)
+    return (_report(r, removed, recol) + f"\nsaved: {os.path.join(d, 'model.ldr')}\n" + "\n".join(comp.log)
+            + "\nNext: call render and look at all 4 views; change the plan and build again until it"
+              " looks right for the brief (a valid build is not yet a good one).")
 
 
 @mcp.tool()
