@@ -200,14 +200,16 @@ class Build:
 
     def _index(self, i):
         if not hasattr(self, "_grid"):
-            self._grid = {}
+            self._grid, self._keys = {}, {}
         p = self.pieces[i]
         p._boxes = p._snaps = None
         C = self.CELL
-        for gx in range(int(p.lo[0] // C), int(p.hi[0] // C) + 1):
-            for gy in range(int(p.lo[1] // C), int(p.hi[1] // C) + 1):
-                for gz in range(int(p.lo[2] // C), int(p.hi[2] // C) + 1):
-                    self._grid.setdefault((gx, gy, gz), []).append(i)
+        keys = [(gx, gy, gz) for gx in range(int(p.lo[0] // C), int(p.hi[0] // C) + 1)
+                for gy in range(int(p.lo[1] // C), int(p.hi[1] // C) + 1)
+                for gz in range(int(p.lo[2] // C), int(p.hi[2] // C) + 1)]
+        for k in keys:
+            self._grid.setdefault(k, []).append(i)
+        self._keys[i] = keys
 
     def near(self, i, pad=1.0):
         """Indices of pieces whose bounding boxes overlap piece i's."""
@@ -225,7 +227,8 @@ class Build:
     def pop(self):
         """Remove the last placed piece."""
         i = len(self.pieces) - 1
-        for ids in self._grid.values():
+        for k in self._keys.pop(i, ()):
+            ids = self._grid[k]
             if ids and ids[-1] == i:
                 ids.pop()
         return self.pieces.pop()

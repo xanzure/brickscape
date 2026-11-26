@@ -40,6 +40,9 @@ def Rz(deg):
 
 
 def M(*ms):
+    """Compose frames; None (a part that could not be placed) propagates so chains just stop."""
+    if any(m is None for m in ms):
+        return None
     out = ms[0]
     for m in ms[1:]:
         out = _mul(out, m)
@@ -441,6 +444,8 @@ def oak(b, rng, x, z, y=0, size="medium", leaves=(GREEN, GREEN, DGREEN), bark=RB
     for lv in range(P["h"]):
         F = on(b, F, trunk, bark if rng.random() < 0.8 else DBROWN, 0 if w == 2 else rng.uniform(0, 360))
     for t in range(P["tiers"]):
+        if F is None:
+            break
         hub_part = "4032a" if (w == 1 or t == P["tiers"] - 1) else "3031"
         hub = put(b, hub_part, rng.choice(leaves), M(F, T(0, -8, 0)))
         if hub is None:

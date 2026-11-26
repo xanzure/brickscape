@@ -105,16 +105,22 @@ class Compiler:
         self.plan = plan
         bd = plan.get("board", {})
         self.W, self.D = int(bd.get("width", 32)), int(bd.get("depth", 32))
-        if self.W % 16 or self.D % 16 or self.W > 192 or self.D > 192:
-            raise PlanError("board width/depth must be multiples of 16 studs, at most 192")
+        if not (4 <= self.W <= 192 and 4 <= self.D <= 192):
+            raise PlanError("board width/depth must be 4..192 studs")
         self.b = Build(plan.get("name", "brickscape build"), self.W, self.D)
         self.rng = random.Random(plan.get("seed", 1))
         self.seed = int(plan.get("seed", 1))
         bc = colour(bd.get("colour", "green"))
-        step = 32 if self.W % 32 == 0 and self.D % 32 == 0 else 16
-        for x in range(0, self.W, step):
-            for z in range(0, self.D, step):
-                self.b.base(x, z, color=bc, part="3811" if step == 32 else "3867")
+        if self.W % 16 == 0 and self.D % 16 == 0:    # baseplates
+            step = 32 if self.W % 32 == 0 and self.D % 32 == 0 else 16
+            for x in range(0, self.W, step):
+                for z in range(0, self.D, step):
+                    self.b.base(x, z, color=bc, part="3811" if step == 32 else "3867")
+        else:                                        # any other size: a floor of plates
+            cells = {(x, z) for x in range(self.W) for z in range(self.D)}
+            for (x, z, w, d) in pack(cells, PLATES):
+                put_rect(self.b, PLATES, bc, x, z, w, d, -1)
+                self.b.roots.add(len(self.b.pieces) - 1)
         self.b.step()
         self.board = {(x, z) for x in range(self.W) for z in range(self.D)}
         self.surface = {}          # cell -> top height in plates (missing = 0)
@@ -326,11 +332,28 @@ class Compiler:
     # ------------------------------------------------------------------ plants
     TREES = {"oak": "oak", "birch": "birch", "pine": "pine", "palm": "palm", "cypress": "cypress"}
 
+    NEAR = [(0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1),
+            (2, 0), (-2, 0), (0, 2), (0, -2)]
+
+    def _nearby(self, op, place, need=3):
+        """Run place(x, z) at op['at'] or the nearest spot within 2 studs where it fits."""
+        x0, z0 = op["at"]
+        for dx, dz in self.NEAR:
+            n0 = len(self.b.pieces)
+            place(x0 + dx, z0 + dz)
+            if len(self.b.pieces) - n0 >= need:
+                return
+            while len(self.b.pieces) > n0:
+                self.b.pop()
+        self.log.append(f"  (no room for {op.get('kind', op['op'])} near {op['at']})")
+
     def op_tree(self, op):
-        """A tree at [x, z]: kind oak (size small/medium/tall/fat/big), birch, pine, palm,
-        cypress. leaf / bark colours optional."""
+        """A tree at [x, z] (moved up to 2 studs if it doesn't fit there): kind oak (size
+        small/medium/tall/fat/big), birch, pine, palm, cypress. leaf / bark colours optional."""
+        self._nearby(op, lambda x, z: self._tree(op, x, z), need=4)
+
+    def _tree(self, op, x, z):
         kind = op.get("kind", "oak")
-        x, z = op["at"]
         rng = self.rng_for(op)
         y = self.h((x, z))
         lc = op.get("leaf")
@@ -371,8 +394,8 @@ class Compiler:
         kind = op.get("kind", "bush")
         if kind not in self.PLANTS:
             raise PlanError(f"plant kind must be one of {', '.join(self.PLANTS)}")
-        x, z = op["at"]
-        self.PLANTS[kind](self.b, self.rng_for(op), x, z, self.h((x, z)))
+        rng = self.rng_for(op)
+        self._nearby(op, lambda x, z: self.PLANTS[kind](self.b, rng, x, z, self.h((x, z))), need=1)
 
     def op_scatter(self, op):
         """Plants scattered over an area: kinds [..] (PLANTS names, or 'tree:oak' etc.),
@@ -394,7 +417,7 @@ class Compiler:
                 fp = {(c[0] + i, c[1] + j) for i in range(-2, 3) for j in range(-2, 3)}
                 if fp & taken:
                     continue
-                self.op_tree({"kind": k[5:], "at": list(c), "size": rng.choice(("small", "medium"))})
+                self._tree({"kind": k[5:], "size": rng.choice(("small", "medium"))}, c[0], c[1])
                 taken |= fp
             else:
                 if k not in self.PLANTS:

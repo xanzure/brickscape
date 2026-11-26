@@ -1,0 +1,97 @@
+{
+ "name": "forest clearing",
+ "board": {
+  "width": 32,
+  "depth": 32
+ },
+ "seed": 1,
+ "ops": [
+  {
+   "op": "hill",
+   "area": {
+    "ellipse": [
+     22,
+     24,
+     9,
+     7
+    ],
+    "rough": 0.5
+   },
+   "height": 8,
+   "style": "terraces"
+  },
+  {
+   "op": "hill",
+   "area": {
+    "ellipse": [
+     6,
+     26,
+     5,
+     4
+    ]
+   },
+   "height": 12,
+   "style": "rock"
+  },
+  {
+   "op": "path",
+   "points": [
+    [
+     0,
+     10
+    ],
+    [
+     14,
+     13
+    ],
+    [
+     31,
+     9
+    ]
+   ],
+   "width": 3,
+   "style": "cobble"
+  },
+  {
+   "op": "boulder",
+   "at": [
+    [
+     12,
+     3,
+     4
+    ],
+    [
+     20,
+     4,
+     2
+    ]
+   ]
+  },
+  {
+   "op": "tree",
+   "kind": "oak",
+   "size": "medium",
+   "at": [
+    27,
+    4
+   ]
+  },
+  {
+   "op": "scatter",
+   "area": {
+    "rect": [
+     0,
+     0,
+     32,
+     32
+    ]
+   },
+   "kinds": [
+    "tuft",
+    "flower",
+    "bush"
+   ],
+   "density": 0.06
+  }
+ ]
+}

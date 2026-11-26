@@ -221,7 +221,7 @@ def repair(b, max_rounds=5):
         removed += [(b.pieces[i].part, b.pieces[i].color) for i in sorted(bad)]
         keep = [p for i, p in enumerate(b.pieces) if i not in bad]
         roots = {keep.index(b.pieces[i]) for i in b.roots}
-        b.pieces, b.roots, b._grid = [], roots, {}
+        b.pieces, b.roots, b._grid, b._keys = [], roots, {}, {}
         for p in keep:
             b.pieces.append(p)
             b._index(len(b.pieces) - 1)
