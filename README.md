@@ -19,7 +19,7 @@ what it can, and hands back a BrickLink Studio file, renders, a part list and st
 instructions.
 
 ![A BrickScape build: a tall grey rock cliff, a stream running past it, a terraced bank with a big oak, a birch, boulders and plants on a green baseplate](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/showcase.png)
-*Built by BrickScape from a [seven-operation plan](https://github.com/xanzure/brickscape/blob/main/examples/showcase.json): 1,466 parts, every one held by a real connection, no two parts intersecting.*
+*Built by BrickScape from a [seven-operation plan](https://github.com/xanzure/brickscape/blob/main/src/brickscape/examples/showcase.json): 1,466 parts, every one held by a real connection, no two parts intersecting.*
 
 > **Benchmark** (blind, position-swapped judging against plain Claude on 6 briefs): BrickScape was
 > **8.9x cheaper and 7.9x faster**, **all 6 of its builds pass the strict checker (plain Claude: 0 of 6)**,
@@ -316,7 +316,7 @@ The report writes `bench/results/<run>/results.json` and the charts and table in
 
 ```bash
 brickscape guide                         # the planning guide
-brickscape build examples/forest-clearing.json
+brickscape build src/brickscape/examples/forest-clearing.json
 brickscape render forest-clearing        # 4 standard views
 brickscape export forest-clearing        # Studio .io
 brickscape parts forest-clearing         # parts.csv + bricklink.xml

@@ -58,7 +58,7 @@ def test_schema_rejects_bad_fields_with_location():
 def test_examples_validate():
     import glob
     from brickscape.schema import parse
-    for f in glob.glob(os.path.join(os.path.dirname(__file__), "..", "examples", "*.json")):
+    for f in glob.glob(os.path.join(os.path.dirname(__file__), "..", "src", "brickscape", "examples", "*.json")):
         parse(open(f).read())
 
 

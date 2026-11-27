@@ -454,6 +454,71 @@ def check(path: Annotated[str, Field(description="Path to a model to validate: .
     return _report(validate(b, source=source), [], {})
 
 
+# ----------------------------------------------------------------------------- resources
+EXAMPLES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "examples")
+
+
+@mcp.resource("brickscape://guide", name="guide", title="Planning guide", mime_type="text/markdown",
+              description="The full planning guide: workflow, coordinates, every operation, style rules, example.")
+def guide_resource() -> str:
+    return guide()
+
+
+@mcp.resource("brickscape://schema/plan", name="plan-schema", title="Build plan JSON schema",
+              mime_type="application/json",
+              description="JSON Schema of a build plan: every operation, field, allowed value and limit.")
+def plan_schema() -> str:
+    return json.dumps(Plan.model_json_schema(), indent=1)
+
+
+@mcp.resource("brickscape://examples/{example}", name="example-plan", title="Example build plan",
+              mime_type="application/json",
+              description="A complete example plan: 'forest-clearing', 'garden-20' or 'showcase' (the README cover).")
+def example_plan(example: str) -> str:
+    f = os.path.join(EXAMPLES, os.path.basename(example) + ".json")
+    if not os.path.exists(f):
+        raise ValueError(f"no example {example!r}; have: "
+                         + ", ".join(sorted(x[:-5] for x in os.listdir(EXAMPLES) if x.endswith(".json"))))
+    return open(f).read()
+
+
+@mcp.resource("brickscape://colours", name="colours", title="LEGO colour names", mime_type="text/plain",
+              description="Every LDraw colour name and code accepted in plans (e.g. 'dark bluish grey' = 72).")
+def colour_list() -> str:
+    from brickscape.plan import colours
+    return "\n".join(f"{code:5d}  {name}" for name, code in sorted(colours().items(), key=lambda kv: kv[1]))
+
+
+# ----------------------------------------------------------------------------- prompts
+@mcp.prompt(name="design_scene", title="Design a LEGO scene",
+            description="Design a buildable LEGO scene from a short description, then deliver the files.")
+def design_scene(description: str, width: int = 32, depth: int = 32, source: str = "lego") -> str:
+    return (f"Design a LEGO build with BrickScape: {description}\n"
+            f"Board: {width} x {depth} studs. Part source: {source}.\n"
+            "Call `guide` first. Write a short brief (what goes where, palette, limits), then `build` a plan, "
+            "`render` it and look at all four views, improve the plan and build again at least once. "
+            "When it looks right, `export` the Studio .io and run `parts_list`. Report the file paths, "
+            "the part count and anything the validator removed.")
+
+
+@mcp.prompt(name="recreate_photo", title="Recreate a LEGO photo",
+            description="Recreate a LEGO diorama from a reference photo as closely as possible.")
+def recreate_photo(photo_path: str, width: int = 32, depth: int = 32) -> str:
+    return (f"Recreate the LEGO build in the photo {photo_path} with BrickScape, on {width} x {depth} studs.\n"
+            "Look at the photo and note what goes where (rock, water, trees, paths), rough sizes in studs and "
+            "the colours. Call `guide`, `build` a plan that matches that layout, then use `compare` with the photo "
+            "from a camera that matches its viewpoint, fix the biggest differences and build again. Repeat until "
+            "the layout, proportions and colours match, then `export` and run `parts_list`.")
+
+
+@mcp.prompt(name="check_model", title="Check a model is buildable",
+            description="Check any LEGO model file for problems and explain how to fix them.")
+def check_model(path: str, source: str = "lego") -> str:
+    return (f"Use BrickScape's `check` on {path} (part source {source}). Explain each problem it finds "
+            "(intersecting parts, loose parts, unavailable parts, impossible colours) in plain words, "
+            "say which parts are involved and how a builder could fix each one.")
+
+
 def main():
     mcp.run()
 
