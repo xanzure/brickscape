@@ -87,6 +87,9 @@ def build_one(run_dir, pr, cond, ldraw):
         note = BASE_NOTE.format(ldraw=ldraw)
     prompt = f"Brief: {pr['prompt']}\n\n{RULES}\n\n{note}"
     r = claude(prompt, d, tools, cfg)
+    if "limit" in str(r.get("result", "")).lower() and r.get("is_error"):
+        print(f"{pr['id']} {cond}: usage limit hit, rerun later", flush=True)
+        return                                  # no session.json: a rerun redoes this build
     if not os.path.exists(os.path.join(d, "model.ldr")):          # fall back to the last build
         hits = sorted(glob.glob(os.path.join(d, "brickscape-out", "*", "model.ldr")), key=os.path.getmtime)
         if hits:
@@ -167,7 +170,10 @@ def judge(run_dir, pr, mode="full"):
         except (ValueError, KeyError, AttributeError):
             rounds.append({"winner": None, "reason": "unparseable verdict: " + txt[:200]})
     wins = sum(1 for r in rounds if r["winner"] == "mcp")
-    res = {"rounds": rounds, "outcome": "win" if wins == 2 else "loss" if wins == 0 else "tie"}
+    if all(r["winner"] is None for r in rounds):
+        res = {"rounds": rounds, "outcome": "void"}       # nothing to judge: rerun, don't score
+    else:
+        res = {"rounds": rounds, "outcome": "win" if wins == 2 else "loss" if wins == 0 else "tie"}
     json.dump(res, open(out, "w"), indent=1)
     return res
 
