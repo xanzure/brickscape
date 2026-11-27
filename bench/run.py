@@ -88,6 +88,8 @@ def build_one(run_dir, pr, cond, ldraw):
     d = os.path.join(run_dir, pr["id"], cond)
     if os.path.exists(os.path.join(d, "session.json")):
         return
+    if os.path.isdir(d):                     # a build cut off earlier: start it again from empty
+        shutil.rmtree(d)
     os.makedirs(d, exist_ok=True)
     tools = ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
     cfg = None
@@ -192,6 +194,9 @@ def judge(run_dir, pr, mode="accuracy"):
                           f"Use the Read tool on REFERENCE{ext}, A.png and B.png.")
         r = claude(q, jd, ["Read"], timeout=900)
         txt = r.get("result", "")
+        if r.get("is_error") and "limit" in str(txt).lower():
+            print(f"{pr['id']} {mode}: usage limit hit while judging, rerun later", flush=True)
+            return {"outcome": "pending"}          # nothing saved: the next run judges it again
         try:
             v = json.loads(txt[txt.index("{"):txt.rindex("}") + 1])
             win = order[0] if v["winner"].strip().upper() == "A" else order[1]
