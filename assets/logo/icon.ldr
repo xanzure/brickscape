@@ -1,0 +1,9 @@
+0 brickscape icon
+0 Name: icon.ldr
+0 Author: brickscape
+0 !LDRAW_ORG Unofficial_Model
+
+1 2 0 -8 0 1 0 0 0 1 0 0 0 1 32607.dat
+1 10 0 -16 0 -0.965926 0 0.258819 0 1 0 -0.258819 0 -0.965926 32607.dat
+1 30 0 -24 0 -0.996195 0 -0.087156 0 1 0 0.087156 0 -0.996195 24866.dat
+0 STEP
