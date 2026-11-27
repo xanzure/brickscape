@@ -39,9 +39,7 @@ JUDGE = """You are judging two LEGO designs made for the same brief. Be strict a
 Brief: {prompt}
 
 A.png and B.png each show one design from the same 4 standard camera angles (front-left,
-front-right, back-right, back-left). An automated checker reported:
-- A: {va}
-- B: {vb}
+front-right, back-right, back-left).{checker}
 
 Decide which design is the better answer to the brief, as a real LEGO build someone would want
 to build and display: how good and natural it looks (not blocky, good detail and colour), how
@@ -133,15 +131,21 @@ def summary(c):
             f"{c['bad_parts']} unknown/unavailable parts; {c['bad_colours']} parts in colours LEGO doesn't make")
 
 
-def judge(run_dir, pr):
+CHECKER = """ An automated checker reported:
+- A: {va}
+- B: {vb}"""
+
+
+def judge(run_dir, pr, mode="full"):
+    """mode "full": judges also see the checker summaries; "looks": images and brief only."""
     d = os.path.join(run_dir, pr["id"])
-    out = os.path.join(d, "judge.json")
+    out = os.path.join(d, "judge.json" if mode == "full" else f"judge_{mode}.json")
     if os.path.exists(out):
         return json.load(open(out))
     cm, cb = (json.load(open(os.path.join(d, c, "check.json"))) for c in ("mcp", "base"))
     rounds = []
     for k, order in enumerate((("mcp", "base"), ("base", "mcp"))):
-        jd = os.path.join(d, f"judge{k + 1}")
+        jd = os.path.join(d, f"judge{k + 1}" + ("" if mode == "full" else "_" + mode))
         os.makedirs(jd, exist_ok=True)
         ca, cbb = (cm if o == "mcp" else cb for o in order)
         if not ca.get("sheet") and not cbb.get("sheet"):
@@ -153,7 +157,8 @@ def judge(run_dir, pr):
             continue
         shutil.copy(ca["sheet"], os.path.join(jd, "A.png"))
         shutil.copy(cbb["sheet"], os.path.join(jd, "B.png"))
-        r = claude(JUDGE.format(prompt=pr["prompt"], va=summary(ca), vb=summary(cbb)), jd, ["Read"], timeout=900)
+        chk = CHECKER.format(va=summary(ca), vb=summary(cbb)) if mode == "full" else ""
+        r = claude(JUDGE.format(prompt=pr["prompt"], checker=chk), jd, ["Read"], timeout=900)
         txt = r.get("result", "")
         try:
             v = json.loads(txt[txt.index("{"):txt.rindex("}") + 1])
@@ -189,7 +194,7 @@ def main():
                 print(p["id"], c, summary(check_render(run_dir, p, c)), flush=True)
     if a.stage in ("judge", "all"):
         for p in prompts:
-            print(p["id"], judge(run_dir, p)["outcome"], flush=True)
+            print(p["id"], "full:", judge(run_dir, p)["outcome"], "looks-only:", judge(run_dir, p, "looks")["outcome"], flush=True)
     if a.stage in ("report", "all"):
         from report import report
         print(report(run_dir))
