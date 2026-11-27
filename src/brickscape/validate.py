@@ -193,12 +193,13 @@ def _removable(k, edges, reach, roots):
 
 
 def repair(b, max_rounds=5):
-    """Remove parts that make a build unbuildable when removing them costs nothing: loose
-    parts, and in each clashing pair the later part if it is decorative (plants, leaves,
+    """First remove every part reaching past the board edge. Then remove parts that make a build
+    unbuildable when removing them costs nothing: loose parts, and in each clashing pair the later part if it is decorative (plants, leaves,
     flowers) or holds nothing else up. Anything else stays in the report as a failure.
     -> list of removed (part, colour) for the report."""
     from brickscape.terrain.greenery import decorative
-    removed = []
+    removed = [(b.pieces[i].part, b.pieces[i].color) for i in sorted(outside(b))]
+    remove(b, outside(b))                      # nothing may stick out past the board edge
     for _ in range(max_rounds):
         edges, _ = connections(b)
         joined_ = {e for e, t in edges.items() if t != "stud"}
@@ -227,10 +228,24 @@ def repair(b, max_rounds=5):
         if not bad:
             break
         removed += [(b.pieces[i].part, b.pieces[i].color) for i in sorted(bad)]
-        keep = [p for i, p in enumerate(b.pieces) if i not in bad]
-        roots = {keep.index(b.pieces[i]) for i in b.roots}
-        b.pieces, b.roots, b._grid, b._keys = [], roots, {}, {}
-        for p in keep:
-            b.pieces.append(p)
-            b._index(len(b.pieces) - 1)
+        remove(b, bad)
     return removed
+
+
+def remove(b, drop):
+    """Remove pieces by index (baseplates are kept) and rebuild the spatial index."""
+    drop = {i for i in drop if i not in b.roots}
+    keep = [p for i, p in enumerate(b.pieces) if i not in drop]
+    roots = {keep.index(b.pieces[i]) for i in b.roots}
+    b.pieces, b.roots, b._grid, b._keys = [], roots, {}, {}
+    for p in keep:
+        b.pieces.append(p)
+        b._index(len(b.pieces) - 1)
+    return len(drop)
+
+
+def outside(b, tol=2.0):
+    """Pieces reaching past the board edge (more than tol LDU), in x or z."""
+    X0, X1, Z0, Z1 = -b.W * 10 - tol, b.W * 10 + tol, -b.D * 10 - tol, b.D * 10 + tol
+    return {i for i, p in enumerate(b.pieces)
+            if i not in b.roots and (p.lo[0] < X0 or p.hi[0] > X1 or p.lo[2] < Z0 or p.hi[2] > Z1)}

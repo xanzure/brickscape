@@ -59,3 +59,12 @@ def test_examples_validate():
     from brickscape.schema import parse
     for f in glob.glob(os.path.join(os.path.dirname(__file__), "..", "examples", "*.json")):
         parse(open(f).read())
+
+
+def test_nothing_sticks_out_past_the_board():
+    from brickscape.validate import outside
+    b, r = build({"name": "edge", "board": {"width": 16, "depth": 16}, "ops": [
+        {"op": "tree", "kind": "oak", "size": "medium", "at": [1, 1]},
+        {"op": "hill", "area": {"rect": [0, 8, 16, 16]}, "height": 12, "style": "rock"}]})
+    assert not outside(b)
+    assert not any(r["checks"].values()), r["checks"]
