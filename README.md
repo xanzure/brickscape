@@ -88,6 +88,11 @@ claude mcp add brickscape -- brickscape-mcp          # Claude Code
 ```
 (Claude Desktop and other clients: add the block above to the client's MCP config.)
 
+**Agent skill:** [`skills/brickscape/SKILL.md`](https://github.com/xanzure/brickscape/blob/main/skills/brickscape/SKILL.md)
+teaches an agent the workflow, coordinates, operations and the design rules that scored well
+in the benchmark. In Claude Code, copy the folder into `~/.claude/skills/` (or a project's
+`.claude/skills/`).
+
 | Environment variable | Default | Meaning |
 |---|---|---|
 | `BRICKSCAPE_OUT` | `./brickscape-out` | where builds are saved |
