@@ -51,14 +51,17 @@ front-right, back-right, back-left). Measured facts:
 - B: {vb}
 
 Use the Read tool on A.png and B.png. Then answer with ONLY a JSON object:
-{{"winner": "A" or "B", "reason": "one sentence"}}""",
+{{"score_A": 1-10, "score_B": 1-10, "winner": "A" or "B", "reason": "one sentence"}}
+Scores: 10 = fully delivers the brief within every limit, 1 = misses it. The winner must have
+the higher score.""",
 "looks": """You are judging two LEGO designs on LOOKS only: which one looks better as a
 LEGO display model (natural and organic rather than blocky, good detail, colour and
 composition). Ignore whether it follows any brief or can be built; other judges score that.
 
 A.png and B.png each show one design from the same 4 standard camera angles.
 Use the Read tool on A.png and B.png. Then answer with ONLY a JSON object:
-{{"winner": "A" or "B", "reason": "one sentence"}}""",
+{{"score_A": 1-10, "score_B": 1-10, "winner": "A" or "B", "reason": "one sentence"}}
+Scores: 10 = a model you'd proudly display, 1 = a mess. The winner must have the higher score.""",
 }
 MODES = ("accuracy", "looks")
 
@@ -200,7 +203,9 @@ def judge(run_dir, pr, mode="accuracy"):
         try:
             v = json.loads(txt[txt.index("{"):txt.rindex("}") + 1])
             win = order[0] if v["winner"].strip().upper() == "A" else order[1]
-            rounds.append({"winner": win, "reason": v.get("reason", ""), "shown_as_A": order[0]})
+            sc = {order[0]: v.get("score_A"), order[1]: v.get("score_B")}
+            rounds.append({"winner": win, "reason": v.get("reason", ""), "shown_as_A": order[0],
+                           "score_mcp": sc["mcp"], "score_base": sc["base"]})
         except (ValueError, KeyError, AttributeError):
             rounds.append({"winner": None, "reason": "unparseable verdict: " + txt[:200]})
     wins = sum(1 for r in rounds if r["winner"] == "mcp")

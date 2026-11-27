@@ -74,6 +74,12 @@ def report(run_dir, docs=None):
             j = json.load(open(os.path.join(d, f"judge_{m}.json")))
             row[m] = j["outcome"]
             row["reasons"][m] = [r.get("reason", "") for r in j["rounds"]]
+            for c in ("mcp", "base"):
+                v = [r.get(f"score_{c}") for r in j["rounds"] if isinstance(r.get(f"score_{c}"), (int, float))]
+                row[f"{m}_score_{c}"] = round(sum(v) / len(v), 1) if v else None
+        m_, b_ = row["mcp"], row["base"]
+        row["cost_x"] = round(b_["cost"] / m_["cost"], 1) if m_["cost"] and b_["cost"] else None
+        row["time_x"] = round(b_["minutes"] / m_["minutes"], 1) if m_["minutes"] and b_["minutes"] else None
         rows.append(row)
     summ = {"prompts": len(rows), "categories": {}}
     for cat in CATS:
@@ -86,6 +92,14 @@ def report(run_dir, docs=None):
     summ["valid_rate"] = {c: round(100 * sum(r[c]["valid"] for r in rows) / n) for c in ("mcp", "base")}
     summ["cost_usd"] = {c: round(sum(r[c]["cost"] or 0 for r in rows), 2) for c in ("mcp", "base")}
     summ["minutes"] = {c: round(sum(r[c]["minutes"] for r in rows), 1) for c in ("mcp", "base")}
+    both = [r for r in rows if r["mcp"]["ok"] and r["base"]["ok"]]
+    tot = lambda c, k: sum(r[c][k] or 0 for r in both)
+    summ["times_cheaper"] = round(tot("base", "cost") / tot("mcp", "cost"), 1) if both and tot("mcp", "cost") else None
+    summ["times_faster"] = round(tot("base", "minutes") / tot("mcp", "minutes"), 1) if both and tot("mcp", "minutes") else None
+    for m in ("accuracy", "looks"):
+        for c in ("mcp", "base"):
+            v = [r[f"{m}_score_{c}"] for r in rows if r.get(f"{m}_score_{c}") is not None]
+            summ.setdefault("avg_score", {}).setdefault(m, {})[c] = round(sum(v) / len(v), 1) if v else None
     json.dump({"summary": summ, "rows": rows}, open(os.path.join(run_dir, "results.json"), "w"), indent=1)
     docs = docs or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "bench")
     os.makedirs(docs, exist_ok=True)
@@ -97,15 +111,26 @@ def report(run_dir, docs=None):
     open(os.path.join(docs, "validity.svg"), "w").write(_bar_svg(
         "Builds that pass the strict checker", [("valid builds", [("with BrickScape", summ["valid_rate"]["mcp"], COL["mcp"]),
                                                                  ("plain Claude", summ["valid_rate"]["base"], COL["base"])])], 100, "%"))
+    mc = max([max(r["mcp"]["cost"] or 0, r["base"]["cost"] or 0) for r in rows] + [0.01])
+    open(os.path.join(docs, "cost.svg"), "w").write(_bar_svg(
+        "Cost per build (USD)", [(r["id"], [("BrickScape", round(r["mcp"]["cost"] or 0, 2), COL["mcp"]),
+                                            ("plain", round(r["base"]["cost"] or 0, 2), COL["base"])]) for r in rows], mc, ""))
+    if summ.get("avg_score"):
+        sc = summ["avg_score"]
+        open(os.path.join(docs, "scores.svg"), "w").write(_bar_svg(
+            "Average judge score out of 10", [(m, [("BrickScape", sc[m]["mcp"] or 0, COL["mcp"]), ("plain", sc[m]["base"] or 0, COL["base"])])
+                                              for m in ("accuracy", "looks")], 10))
     mx = max([max(r["mcp"]["minutes"], r["base"]["minutes"]) for r in rows] + [1])
     open(os.path.join(docs, "minutes.svg"), "w").write(_bar_svg(
         "Minutes per build", [(r["id"], [("BrickScape", r["mcp"]["minutes"], COL["mcp"]), ("plain", r["base"]["minutes"], COL["base"])])
                               for r in rows], mx))
-    md = ["| prompt | kind | efficiency | accuracy | looks | BrickScape: parts, valid, min, $ | plain: parts, valid, min, $ |",
-          "|---|---|---|---|---|---|---|"]
+    md = ["| prompt | kind | cheaper | faster | accuracy (scores) | looks (scores) | BrickScape: parts, valid, min, $ | plain: parts, valid, min, $ |",
+          "|---|---|---|---|---|---|---|---|"]
     f = lambda c: f"{c['pieces']}, {'yes' if c['valid'] else 'no'}, {c['minutes']}, {c['cost'] or 0:.2f}"
     for r in rows:
-        md.append(f"| {r['id']} | {r['kind']} | {r['efficiency']} | {r['accuracy']} | {r['looks']} | {f(r['mcp'])} | {f(r['base'])} |")
+        x = lambda v: f"{v}x" if v else "-"
+        js = lambda m: f"{r[m]} ({r.get(m + '_score_mcp')} vs {r.get(m + '_score_base')})"
+        md.append(f"| {r['id']} | {r['kind']} | {x(r['cost_x'])} | {x(r['time_x'])} | {js('accuracy')} | {js('looks')} | {f(r['mcp'])} | {f(r['base'])} |")
     open(os.path.join(docs, "table.md"), "w").write("\n".join(md) + "\n")
     return json.dumps(summ, indent=1) + "\n" + "\n".join(md)
 
