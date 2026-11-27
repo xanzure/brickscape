@@ -3,7 +3,7 @@
 # checkout), then exercise every tool over MCP.
 #   tools/sandbox_test.sh pip  [git-ref]     pip install git+https://github.com/xanzure/brickscape
 #   tools/sandbox_test.sh curl [git-ref]     curl ... install.sh | sh
-#   tools/sandbox_test.sh pypi               pip install brickscape (after it's on PyPI)
+#   tools/sandbox_test.sh pypi [version]     pip install brickscape[==version] from PyPI
 # Blender isn't installed by BrickScape: set LDRAW_MCP_BLENDER (or have blender on PATH) to test
 # renders; set NO_RENDER=1 to skip them.
 set -euo pipefail
@@ -21,7 +21,9 @@ case "$MODE" in
         "$ROOT/venv/bin/pip" install -q "$GIT"
         BIN="$ROOT/venv/bin"; "$BIN/brickscape" setup ;;
   pypi) python3 -m venv "$ROOT/venv"
-        "$ROOT/venv/bin/pip" install -q brickscape
+        PIN=""; [ "$REF" != "main" ] && PIN="==$REF"
+        "$ROOT/venv/bin/pip" install -q --no-cache-dir "brickscape$PIN"
+        "$ROOT/venv/bin/pip" show brickscape | grep -i '^version'
         BIN="$ROOT/venv/bin"; "$BIN/brickscape" setup ;;
   curl) curl -LsSf "https://raw.githubusercontent.com/xanzure/brickscape/$REF/install.sh" \
           | BRICKSCAPE_PACKAGE="$GIT" sh
