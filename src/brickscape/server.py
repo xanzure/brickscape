@@ -12,7 +12,9 @@ from mcp.server.mcpserver import Image, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
 from brickscape import __version__
+from typing import Union
 from brickscape.plan import PlanError, compile_plan, op_reference
+from brickscape.schema import Plan
 
 mcp = MCPServer("brickscape", version=__version__)
 OUT = os.path.abspath(os.path.expanduser(os.environ.get("BRICKSCAPE_OUT", "brickscape-out")))
@@ -208,12 +210,13 @@ def _report(r, removed, recol):
 
 @mcp.tool()
 @_tool
-def build(plan: str, source: str = "lego") -> str:
-    """Compile a JSON build plan (see guide) into a model, repair it, check it strictly, and
-    save it as <name>/model.ldr. Returns the validation report."""
+def build(plan: Union[Plan, str], source: str = "lego") -> str:
+    """Compile a build plan (see guide; the schema lists every operation and field) into a
+    model, repair it, check it strictly, and save it as <name>/model.ldr. Returns the report."""
     from brickscape.validate import validate, repair
     from brickscape.catalog import fix_colours
-    p = json.loads(plan) if isinstance(plan, str) else plan
+    from brickscape.schema import parse
+    p = parse(plan)
     b, comp = compile_plan(p)
     removed = repair(b)
     recol = fix_colours(b, source)

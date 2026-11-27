@@ -453,11 +453,14 @@ def op_reference():
 
 
 def compile_plan(plan):
+    """Validate a plan (dict, JSON string or schema.Plan) against the typed schema, compile it."""
+    from brickscape.schema import parse
     if isinstance(plan, str):
         try:
-            plan = json.loads(plan)
+            json.loads(plan)
         except json.JSONDecodeError as e:
             raise PlanError(f"plan is not valid JSON: {e}") from None
+    plan = parse(plan)
     c = Compiler(plan)
     b = c.run()
     return b, c

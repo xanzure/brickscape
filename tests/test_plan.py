@@ -29,7 +29,7 @@ def test_odd_board_gets_plate_floor():
 
 def test_unknown_op_names_the_op():
     from brickscape.plan import compile_plan, PlanError
-    with pytest.raises(PlanError, match="op 0"):
+    with pytest.raises(PlanError, match=r"ops\.0.*does not match"):
         compile_plan({"ops": [{"op": "castle"}]})
 
 
@@ -42,3 +42,20 @@ def test_io_roundtrip(tmp_path):
     z.setpassword(b"soho0909")
     assert b"3001.dat" in z.read("model.ldr")
     assert json.loads(z.read(".info"))["total_parts"] == 1
+
+
+def test_schema_rejects_bad_fields_with_location():
+    from brickscape.plan import compile_plan, PlanError
+    with pytest.raises(PlanError, match=r"ops\.0\.tree\.size"):
+        compile_plan({"ops": [{"op": "tree", "at": [3, 3], "size": "huge"}]})
+    with pytest.raises(PlanError, match="exactly one of"):
+        compile_plan({"ops": [{"op": "block", "area": {"rect": [0, 0, 4, 4], "ellipse": [1, 1, 1, 1]}}]})
+    with pytest.raises(PlanError, match="Extra inputs"):
+        compile_plan({"ops": [{"op": "hill", "area": {"rect": [0, 0, 4, 4]}, "heigth": 4}]})
+
+
+def test_examples_validate():
+    import glob
+    from brickscape.schema import parse
+    for f in glob.glob(os.path.join(os.path.dirname(__file__), "..", "examples", "*.json")):
+        parse(open(f).read())
