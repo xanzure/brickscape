@@ -181,12 +181,13 @@ def part_info(part: str, source: str = "lego") -> str:
 
 def _report(r, removed, recol):
     c = r["checks"]
-    ok = not any(c.values())
+    s = r["source"]
+    # unavailable parts and impossible part/colour pairs live in r["source"], not r["checks"]
+    ok = not any(c.values()) and not s["missing"] and not s["bad_colour"]
     lines = [f"{'VALID' if ok else 'PROBLEMS'}: {r['pieces']} parts, source {r['source']['source']}"]
     for k, v in c.items():
         if v:
             lines.append(f"- {k}: {len(v)} ({', '.join(v[:8])}{' ...' if len(v) > 8 else ''})")
-    s = r["source"]
     if s["missing"]:
         lines.append(f"- parts not available at {s['source']}: {s['missing']}")
     if s["bad_colour"]:

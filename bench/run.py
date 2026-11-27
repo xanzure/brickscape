@@ -138,7 +138,7 @@ def check_render(run_dir, pr, cond):
             res.update(pieces=v["pieces"], collisions=len(c["collisions"]), loose=len(c["not_connected"]),
                        bad_parts=len(c["parts"]) + sum(v["source"]["missing"].values()),
                        bad_colours=sum(v["source"]["bad_colour"].values()))
-            res["valid"] = not (res["collisions"] or res["loose"] or res["bad_parts"])
+            res["valid"] = not (res["collisions"] or res["loose"] or res["bad_parts"] or res["bad_colours"])
             from brickscape.plan import colours as _cn
             names = {v: k for k, v in _cn().items()}
             body = [p for i, p in enumerate(b.pieces) if i not in b.roots] or b.pieces
