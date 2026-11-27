@@ -133,8 +133,12 @@ EXAMPLE = {
 @mcp.tool(title="Planning guide", annotations=RO)
 @_tool
 def guide() -> str:
-    """How to plan a BrickScape build: workflow, coordinates, every operation, style tips and
-    an example plan. Read this first."""
+    """How to plan a BrickScape build. Call this first, once per session, before writing a plan.
+
+    Returns Markdown: the workflow (brief, build, render, improve, deliver), the coordinate system
+    (studs; z = 0 is the front edge; heights in plates, 3 plates = 1 brick), every plan operation
+    with its fields, design rules, how to use reference photos, colour names and an example plan.
+    Read-only; needs no installed data."""
     return GUIDE.format(ops=op_reference(), example=json.dumps(EXAMPLE, indent=1))
 
 
@@ -143,8 +147,13 @@ def guide() -> str:
 def search_parts(query: Annotated[str, Field(description="Words that must all appear in the part description, e.g. 'slope 45 2 x 1' or 'plant leaves'")],
                  source: Source = "lego",
                  limit: Annotated[int, Field(ge=1, le=200, description="Maximum number of parts to list")] = 25) -> str:
-    """Find LDraw parts whose description matches all words of `query` (e.g. "slope 45 2 x 1",
-    "plant leaves"), with whether the part source has them and in how many colours."""
+    """Find LDraw parts by description, with availability at a part source.
+
+    Use it to pick parts for `brick` / `ldraw` operations, or to check whether a part exists at
+    LEGO or GoBricks. Matches parts whose description contains every word of `query` (case
+    insensitive), lists available parts first, most colours first. Returns one line per part:
+    part number, description, and "N colours" or "NOT AVAILABLE". For one part's details use
+    `part_info`. Read-only."""
     from brickscape.catalog import get
     from brickscape.config import LDRAW
     words = query.lower().split()
@@ -174,8 +183,13 @@ def search_parts(query: Annotated[str, Field(description="Words that must all ap
 @_tool
 def part_info(part: Annotated[str, Field(description="LDraw part number, e.g. '3001' or '32607'")],
               source: Source = "lego") -> str:
-    """Size and connection points of one part (studs, anti-studs, bars, clips, hinges, pins)
-    and the colours it exists in at the part source."""
+    """Details of one part: size, connection points and real colours.
+
+    Use it before placing a specific part, to know how big it is, how it connects (studs,
+    anti-studs, bars, bar holes, clips, hinge fingers, ball joints, from the LDCad connection
+    data) and which colours exist for it at the part source. Returns plain text: description,
+    size in studs and plates, a count of each connection type, and the colour names with LDraw
+    codes. To find a part number first, use `search_parts`. Read-only."""
     from brickscape.core.brick import info
     from brickscape.core.snaps import part_snaps
     from brickscape.catalog import get
@@ -237,8 +251,18 @@ def _report(r, removed, recol):
 @_tool
 def build(plan: Annotated[Union[Plan, str], Field(description="The build plan: board size, seed and a list of operations (hill, block, water, path, boulder, tree, plant, scatter, brick, ldraw). An object or a JSON string.")],
           source: Source = "lego") -> str:
-    """Compile a build plan (see guide; the schema lists every operation and field) into a
-    model, repair it, check it strictly, and save it as <name>/model.ldr. Returns the report."""
+    """Compile a build plan into a LEGO model, repair it and validate it strictly.
+
+    This is the main tool. The plan gives a board size and a list of operations (hill, block,
+    water, path, boulder, tree, plant, scatter, brick, ldraw); call `guide` for what each does.
+    BrickScape places every part on real studs, removes parts that don't fit or stick out past
+    the board, swaps colours that don't exist for a part to the nearest real one, then checks for
+    intersecting parts, loose parts, unavailable parts and impossible colours.
+
+    Writes `<BRICKSCAPE_OUT>/<plan name>/model.ldr`, `plan.json` and `report.json` (building the
+    same name again replaces them). Returns the report: VALID or PROBLEMS, what was removed or
+    recoloured, part count, and the saved path. Next: `render` to look at it, then `export`,
+    `parts_list` or `instructions`. Invalid plans are rejected with the exact field at fault."""
     from brickscape.validate import validate, repair
     from brickscape.catalog import fix_colours
     from brickscape.schema import parse
@@ -263,8 +287,12 @@ def build(plan: Annotated[Union[Plan, str], Field(description="The build plan: b
 @_tool
 def render(name: Name,
            resolution: Annotated[int, Field(ge=160, le=2000, description="Pixel size of each of the 4 views")] = 640) -> Image:
-    """Render a saved build from the 4 standard views (front-left, front-right, back-right,
-    back-left, 30 degrees up) as one 2x2 image. Look at every view before delivering."""
+    """Render a saved build from the 4 standard camera angles, as one 2x2 image.
+
+    Use after `build` to see the result; look at all four views before changing the plan or
+    delivering. Views: front-left, front-right, back-right, back-left, 30 degrees above the board.
+    Returns a PNG image and saves the views in `<build>/renders/`. Needs Blender 4.x; takes about
+    10-60 seconds depending on size. To compare with a photo from its viewpoint use `compare`."""
     from brickscape.review.views import standard_views
     d = _dir(name)
     out = standard_views(os.path.join(d, "model.ldr"), os.path.join(d, "renders"), resolution=resolution)
@@ -274,8 +302,13 @@ def render(name: Name,
 @mcp.tool(title="Parts list", annotations=WRITES)
 @_tool
 def parts_list(name: Name, source: Source = "lego") -> str:
-    """Write the part list of a saved build: parts.csv and a BrickLink wanted list
-    (bricklink.xml). Returns a summary."""
+    """Write the parts list of a saved build.
+
+    Use when the user wants to buy or count the parts. Writes `<build>/parts.csv` (part, name,
+    colour, LDraw and BrickLink colour ids, quantity, price) and `<build>/bricklink.xml`, a
+    BrickLink wanted list ready to upload. Returns a summary: total parts, part/colour lots, the
+    file paths, the most used parts, and an estimated cost when `source` is "gobricks". Requires a
+    build made with `build` first."""
     from brickscape.io.export import parts_list as pl
     d = _dir(name)
     r = pl(os.path.join(d, "model.ldr"), d, source=source)
@@ -291,7 +324,12 @@ def parts_list(name: Name, source: Source = "lego") -> str:
 @mcp.tool(title="Export Studio .io", annotations=WRITES)
 @_tool
 def export(name: Name) -> str:
-    """Export a saved build as a BrickLink Studio .io file (with a thumbnail if rendered)."""
+    """Export a saved build as a BrickLink Studio .io file.
+
+    Use when the user wants to open, edit, price or make instructions for the model in BrickLink
+    Studio. Writes `<build>/<name>.io` (with the front-left render as its thumbnail if `render`
+    was run) and returns the paths of the .io and the LDraw model.ldr. Requires a build made with
+    `build` first; overwrites an earlier export."""
     from brickscape.io.export import write_io
     d = _dir(name)
     thumb = os.path.join(d, "renders", "view_front-left.png")
@@ -304,8 +342,14 @@ def export(name: Name) -> str:
 @_tool
 def instructions(name: Name,
                  parts_per_step: Annotated[int, Field(ge=1, le=60, description="Most parts added in one instruction step")] = 10) -> str:
-    """Make step-by-step building instructions (PDF) for a saved build. Slow for big builds
-    (one render per step)."""
+    """Make step-by-step building instructions as a PDF for a saved build.
+
+    Use when the user asks for instructions. Orders the parts so each one is added only after
+    something it connects to, lower parts first, groups them into steps of up to
+    `parts_per_step`, renders every step from one camera, and lays out pages with a parts box per
+    step. Writes `<build>/instructions/instructions.pdf` and `model_steps.ldr` (with STEP lines for
+    Studio's Instruction Maker). Returns the step and page count and paths. Needs Blender; slow
+    for big builds (one render per step), so offer it rather than running it unasked."""
     from brickscape.core.brick import from_ldr
     from brickscape.review.instructions import make
     d = _dir(name)
@@ -332,9 +376,12 @@ def compare(name: Name,
             reference: Annotated[str, Field(description="Path to the reference photo (PNG, JPG or WebP)")],
             azimuth: Annotated[float, Field(description="Camera direction in degrees: 270 front, 225 front-left, 180 left, 315 front-right")] = 225,
             elevation: Annotated[float, Field(ge=0, le=90, description="Camera height in degrees above the baseplate")] = 30) -> Image:
-    """Put a saved build next to a reference photo: renders the build from the given camera
-    (renderer azimuth: 270 front, 225 front-left, 180 left; elevation in degrees) and returns
-    both side by side. Match the photo's viewpoint, then compare shapes, proportions, colours."""
+    """Render a saved build from a chosen camera next to a reference photo.
+
+    Use when the user gave a reference photo: set `azimuth` / `elevation` to match the photo's
+    viewpoint, compare layout, proportions and colours, change the plan, build again. Returns
+    one PNG with the photo on the left and the build on the right, also saved as
+    `<build>/renders/compare.png`. Needs Blender. For a reference build file use `study_reference`."""
     from brickscape.review.render import compare as cmp
     d = _dir(name)
     out = os.path.join(d, "renders", "compare.png")
@@ -346,9 +393,13 @@ def compare(name: Name,
 @mcp.tool(title="Study a reference build", annotations=RO)
 @_tool
 def study_reference(path: Annotated[str, Field(description="Path to a reference model: .ldr, .mpd or BrickLink Studio .io")]) -> str:
-    """Analyse a reference build (.ldr / .mpd / Studio .io) to learn from it: footprint and
-    height, part count and density, how hollow it is, share of sideways (SNOT) and angled parts,
-    part categories, main colours, and its 30 most used parts."""
+    """Analyse a reference LEGO build file to learn its proportions and techniques.
+
+    Use when the user gives an .ldr, .mpd or BrickLink Studio .io as a reference (not a photo:
+    for photos use `compare`). Returns plain text: part count, footprint in studs, height,
+    parts per covered stud, how hollow it is, the share of sideways (SNOT) and angled parts, part
+    categories, main colours and the 30 most used parts. Read-only: does not change or save the
+    file. To check whether that file is buildable use `check`."""
     from brickscape.io.analyze_ref import analyse
     from brickscape.plan import colours
     r = analyse(_ldr_of(path))
@@ -374,7 +425,15 @@ def study_reference(path: Annotated[str, Field(description="Path to a reference 
 @_tool
 def check(path: Annotated[str, Field(description="Path to a model to validate: .ldr, .mpd or BrickLink Studio .io")],
           source: Source = "lego") -> str:
-    """Strictly validate any .ldr / .mpd / Studio .io file."""
+    """Strictly validate any LEGO model file for buildability.
+
+    Use on any .ldr, .mpd or BrickLink Studio .io, including models not made by BrickScape (for
+    BrickScape builds, `build` already reports this). Checks that every part exists in the LDraw
+    library and at the part source, every part/colour pair exists, rotations are real (no mirrored
+    or scaled parts), no duplicates, no two parts intersect (real part shapes), and every part is
+    held by a real connection down to the base. Returns VALID or PROBLEMS with each failing check,
+    the parts involved (part#index) and counts by connection type. Read-only: it never changes the
+    file. Does not check balance or clutch strength."""
     from brickscape.core.brick import from_ldr
     from brickscape.validate import validate
     b = from_ldr(_ldr_of(path))
