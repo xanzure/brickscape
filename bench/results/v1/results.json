@@ -1,186 +1,279 @@
 {
  "summary": {
   "prompts": 6,
-  "wins": 3,
-  "ties": 0,
-  "losses": 3,
-  "win_rate": 50,
-  "win_or_tie_rate": 50,
+  "categories": {
+   "efficiency": {
+    "wins": 6,
+    "ties": 0,
+    "losses": 0,
+    "scored": 6,
+    "win_rate": 100,
+    "win_or_tie_rate": 100
+   },
+   "accuracy": {
+    "wins": 5,
+    "ties": 1,
+    "losses": 0,
+    "scored": 6,
+    "win_rate": 83,
+    "win_or_tie_rate": 100
+   },
+   "looks": {
+    "wins": 5,
+    "ties": 1,
+    "losses": 0,
+    "scored": 6,
+    "win_rate": 83,
+    "win_or_tie_rate": 100
+   }
+  },
   "valid_rate": {
-   "mcp": 0,
+   "mcp": 100,
    "base": 0
   },
-  "looks_only": {
-   "wins": 3,
-   "ties": 0,
-   "win_rate": 50,
-   "win_or_tie_rate": 50
-  },
   "cost_usd": {
-   "mcp": 1.25,
-   "base": 3.18
+   "mcp": 2.06,
+   "base": 18.35
   },
   "minutes": {
-   "mcp": 14.5,
-   "base": 47.2
+   "mcp": 21.5,
+   "base": 170.5
+  },
+  "times_cheaper": 8.9,
+  "times_faster": 7.9,
+  "avg_score": {
+   "accuracy": {
+    "mcp": 8.2,
+    "base": 4.2
+   },
+   "looks": {
+    "mcp": 7.4,
+    "base": 4.8
+   }
   }
  },
  "rows": [
   {
    "id": "big-tree-16",
    "kind": "constrained",
-   "outcome": "loss",
-   "outcome_looks": "loss",
-   "reasons": [
-    "neither build rendered",
-    "neither build rendered"
-   ],
+   "reasons": {
+    "accuracy": [
+     "A meets all constraints (16\u00d716, 180 parts, zero build errors) and visually delivers a large tree with canopy and undergrowth, while B exceeds the board size (17\u00d716), has 40 intersecting part pairs, 10 floating parts, 9 unavailable parts, and 19 parts in colors LEGO doesn't make, making it largely unbuildable.",
+     "B fits exactly on the 16\u00d716 baseplate, stays under 250 parts, shows a large tree with visible roots and undergrowth, and passes every buildability check (0 intersections, 0 floating parts, 0 unavailable parts, 0 wrong-colour parts), while A exceeds the board boundary by one stud, has 40 intersecting part pairs, 10 disconnected parts, 9 unavailable parts, and 19 parts in colours LEGO doesn't produce, making it largely unbuildable and out-of-spec."
+    ],
+    "looks": [
+     "A's tree has a fuller, more layered canopy with better terrain variation and ground-level detail, while B's tall thin trunk with a simple round top gives a 'lollipop' silhouette that feels less organic and display-worthy.",
+     "A's tree has a more natural, organic canopy with varied foliage textures and a convincing trunk, while B's canopy reads as flatter and more uniform, and the tiered baseplate layers feel more artificial than A's ground-level greenery."
+    ]
+   },
    "mcp": {
-    "valid": false,
-    "pieces": 0,
-    "collisions": null,
-    "loose": null,
-    "minutes": 0.0,
-    "cost": 0
+    "ok": true,
+    "valid": true,
+    "pieces": 180,
+    "minutes": 3.0,
+    "cost": 0.3113229
    },
    "base": {
+    "ok": true,
     "valid": false,
-    "pieces": 0,
-    "collisions": null,
-    "loose": null,
-    "minutes": 0.0,
-    "cost": 0
-   }
+    "pieces": 127,
+    "minutes": 30.6,
+    "cost": 3.864391200000001
+   },
+   "efficiency": "win",
+   "accuracy": "win",
+   "accuracy_score_mcp": 8.5,
+   "accuracy_score_base": 3.0,
+   "looks": "tie",
+   "looks_score_mcp": 6.5,
+   "looks_score_base": 6.5,
+   "cost_x": 12.4,
+   "time_x": 10.2
   },
   {
    "id": "cliff-grey-green",
    "kind": "constrained",
-   "outcome": "loss",
-   "outcome_looks": "loss",
-   "reasons": [
-    "neither build rendered",
-    "neither build rendered"
-   ],
+   "reasons": {
+    "accuracy": [
+     "B clearly delivers a distinct cliff wall running along the back edge with open ground in front, meeting the spatial brief directly, while A is a dense scattered landscape across the whole board with no identifiable cliff at the back edge; B's only flaw is 4 unconnected parts.",
+     "Both satisfy the grey/green colour constraint and exceed 4-brick height, but B has zero unconnected parts and far more convincing cliff geometry along the back edge, while A's plain wall meets the letter of the brief with 4 floating parts and minimal cliff character."
+    ],
+    "looks": [
+     "A has rich organic texture with varied stone and foliage across the whole plate giving a convincing cliff/terrain feel, while B is a nearly empty flat board with a single grey wedge that looks unfinished and barren.",
+     "B has rich textural variety, clustered rock formations, and leafy foliage that create a convincing organic cliff scene, while A is a nearly flat green baseplate with a single plain grey wall offering almost no visual interest."
+    ]
+   },
    "mcp": {
-    "valid": false,
-    "pieces": 0,
-    "collisions": null,
-    "loose": null,
-    "minutes": 0.0,
-    "cost": 0
+    "ok": true,
+    "valid": true,
+    "pieces": 910,
+    "minutes": 2.7,
+    "cost": 0.28973400000000005
    },
    "base": {
+    "ok": true,
     "valid": false,
-    "pieces": 0,
-    "collisions": null,
-    "loose": null,
-    "minutes": 0.0,
-    "cost": 0
-   }
+    "pieces": 120,
+    "minutes": 14.6,
+    "cost": 1.5034712999999997
+   },
+   "efficiency": "win",
+   "accuracy": "tie",
+   "accuracy_score_mcp": 6.5,
+   "accuracy_score_base": 7.5,
+   "looks": "win",
+   "looks_score_mcp": 7.0,
+   "looks_score_base": 2.0,
+   "cost_x": 5.2,
+   "time_x": 5.4
   },
   {
    "id": "forest-stream",
    "kind": "broad",
-   "outcome": "win",
-   "outcome_looks": "win",
-   "reasons": [
-    "only one build rendered",
-    "only one build rendered"
-   ],
+   "reasons": {
+    "accuracy": [
+     "A clearly delivers a forest clearing with a visible stream, solid structural integrity (0 intersections, 0 unconnected parts, all valid colors), while B has 52 intersecting pairs, 42 floating parts, and 30 parts in colors LEGO doesn't produce, making it unbuildable and barely readable as a stream scene.",
+     "B clearly delivers a forest clearing with a visible stream running through it and zero build defects, while A has the right concept but is undermined by 52 intersecting part pairs, 42 disconnected parts, and 30 parts in colours LEGO doesn't produce."
+    ],
+    "looks": [
+     "A has richer colour variety with blue water features, varied terrain textures, and more intricate detail throughout, while B's composition is dominated by uniform dark-green conifers that flatten the scene and reduce visual interest.",
+     "B has a richer, more detailed composition with a winding stream, varied terrain textures, diverse tree shapes, and warm accent colours that give it strong visual interest, while A is sparser and more uniform in its green tree coverage with less compositional depth."
+    ]
+   },
    "mcp": {
-    "valid": false,
-    "pieces": 773,
-    "collisions": 3,
-    "loose": 0,
-    "minutes": 4.1,
-    "cost": 0.35342879999999993
+    "ok": true,
+    "valid": true,
+    "pieces": 665,
+    "minutes": 3.9,
+    "cost": 0.33586170000000004
    },
    "base": {
+    "ok": true,
     "valid": false,
-    "pieces": 0,
-    "collisions": null,
-    "loose": null,
-    "minutes": 20.1,
-    "cost": 0.43995389999999995
-   }
+    "pieces": 103,
+    "minutes": 23.9,
+    "cost": 3.0153939000000003
+   },
+   "efficiency": "win",
+   "accuracy": "win",
+   "accuracy_score_mcp": 8.5,
+   "accuracy_score_base": 2.5,
+   "looks": "win",
+   "looks_score_mcp": 7.5,
+   "looks_score_base": 5.5,
+   "cost_x": 9.0,
+   "time_x": 6.1
   },
   {
    "id": "garden-20",
    "kind": "constrained",
-   "outcome": "loss",
-   "outcome_looks": "loss",
-   "reasons": [
-    "neither build rendered",
-    "neither build rendered"
-   ],
+   "reasons": {
+    "accuracy": [
+     "A delivers all three required features (pond, flower beds, winding path) within the 20\u00d720 board and 400-part limit with zero build errors, while B overshoots the board size (32\u00d732 vs 20\u00d720), uses 22 parts in colors LEGO doesn't produce, and has intersecting and disconnected parts.",
+     "B fits exactly on the required 20\u00d720 board, stays under 400 parts, has zero structural or colour violations, and clearly shows a pond, flower beds, and path; A overshoots the board (32\u00d732), has 22 parts in non-existent LEGO colours, and contains intersecting/disconnected parts, making it both out-of-spec and un-buildable."
+    ],
+    "looks": [
+     "A has richer color variety, a natural-looking pond, varied flora with flowers and diverse tree types, and organic landscaping that feels like a real garden, while B is sparse with a stark geometric path layout and monotone dark-green trees that look stiff and artificial.",
+     "B has a richer, more organic garden feel with varied flora, a naturalistic pond, and denser colour composition, while A feels sparse and stiff with large empty green expanses and blocky tree placement."
+    ]
+   },
    "mcp": {
-    "valid": false,
-    "pieces": 0,
-    "collisions": null,
-    "loose": null,
-    "minutes": 0.0,
-    "cost": 0
+    "ok": true,
+    "valid": true,
+    "pieces": 229,
+    "minutes": 4.6,
+    "cost": 0.4708044000000001
    },
    "base": {
+    "ok": true,
     "valid": false,
-    "pieces": 0,
-    "collisions": null,
-    "loose": null,
-    "minutes": 0.0,
-    "cost": 0
-   }
+    "pieces": 121,
+    "minutes": 25.0,
+    "cost": 2.3626101000000004
+   },
+   "efficiency": "win",
+   "accuracy": "win",
+   "accuracy_score_mcp": 9.0,
+   "accuracy_score_base": 2.5,
+   "looks": "win",
+   "looks_score_mcp": 8.0,
+   "looks_score_base": 5.0,
+   "cost_x": 5.0,
+   "time_x": 5.4
   },
   {
    "id": "lakeside",
    "kind": "broad",
-   "outcome": "win",
-   "outcome_looks": "win",
-   "reasons": [
-    "only one build rendered",
-    "only one build rendered"
-   ],
+   "reasons": {
+    "accuracy": [
+     "A delivers a fully enclosed lake with surrounding rocky shore and varied trees across all four views, with zero build issues, while B has 12 unconnected parts, 2 impossible-colour parts, and reads more as a flat coastline edge than a lakeside scene.",
+     "B delivers a recognizable lakeside scene with a central lake, surrounding trees, and shore details with zero technical defects, while A hits the rocky-shore element more directly but is very sparse and carries 12 unconnected parts plus 2 impossible-colour parts that undermine buildability and accuracy."
+    ],
+    "looks": [
+     "A has a lush, organic lakeside scene with varied greenery, floral accents, and a naturally shaped water feature that reads as a cohesive display piece, while B is sparse and blocky with minimal detail and a plain grid-like layout.",
+     "B has a much richer composition with a central pond, varied foliage, flowers, and detailed landscaping that creates an organic, lush scene, while A is sparse and blocky with minimal detail and large empty green and blue areas."
+    ]
+   },
    "mcp": {
-    "valid": false,
-    "pieces": 1054,
-    "collisions": 1,
-    "loose": 0,
-    "minutes": 5.6,
-    "cost": 0.48592199999999997
+    "ok": true,
+    "valid": true,
+    "pieces": 518,
+    "minutes": 3.7,
+    "cost": 0.31847729999999996
    },
    "base": {
+    "ok": true,
     "valid": false,
-    "pieces": 0,
-    "collisions": null,
-    "loose": null,
-    "minutes": 11.1,
-    "cost": 1.3131972
-   }
+    "pieces": 82,
+    "minutes": 30.9,
+    "cost": 3.610753500000001
+   },
+   "efficiency": "win",
+   "accuracy": "win",
+   "accuracy_score_mcp": 8.5,
+   "accuracy_score_base": 5.0,
+   "looks": "win",
+   "looks_score_mcp": 8.0,
+   "looks_score_base": 4.5,
+   "cost_x": 11.3,
+   "time_x": 8.4
   },
   {
    "id": "mountain-pass",
    "kind": "broad",
-   "outcome": "win",
-   "outcome_looks": "win",
-   "reasons": [
-    "only one build rendered",
-    "only one build rendered"
-   ],
+   "reasons": {
+    "accuracy": [
+     "A clearly shows rocky formations flanking a winding path through a mountain pass with no buildability issues, while B's sparse 220-part structure with 39 unconnected parts and 6 impossible-colour parts fails to deliver a credible pass or traversable path.",
+     "B delivers a clearly defined winding tan path flanked by rocky formations that is unambiguously readable as a mountain pass from all angles, with zero structural or color-availability issues, while A's pass is more implied than explicit and is penalized by 39 unconnected parts and 6 non-existent LEGO colors that undermine buildability."
+    ],
+    "looks": [
+     "A has more natural, varied terrain with better colour contrast between the grey rock, green foliage, and tan path, giving it an organic landscape feel, while B's tall uniform grey columns look repetitive and architectural rather than natural.",
+     "B has a more convincing natural landscape with varied terrain, a winding path, mixed foliage, and better colour contrast between the grey rock, green vegetation, and tan ground, while A's tall vertical rock columns feel more abstract and monotonous."
+    ]
+   },
    "mcp": {
-    "valid": false,
-    "pieces": 2494,
-    "collisions": 6,
-    "loose": 0,
-    "minutes": 4.8,
-    "cost": 0.41110710000000006
+    "ok": true,
+    "valid": true,
+    "pieces": 1868,
+    "minutes": 3.6,
+    "cost": 0.3291338999999999
    },
    "base": {
+    "ok": true,
     "valid": false,
-    "pieces": 0,
-    "collisions": null,
-    "loose": null,
-    "minutes": 16.0,
-    "cost": 1.4263161
-   }
+    "pieces": 220,
+    "minutes": 45.5,
+    "cost": 3.992635800000001
+   },
+   "efficiency": "win",
+   "accuracy": "win",
+   "accuracy_score_mcp": 8.0,
+   "accuracy_score_base": 4.5,
+   "looks": "win",
+   "looks_score_mcp": 7.5,
+   "looks_score_base": 5.5,
+   "cost_x": 12.1,
+   "time_x": 12.6
   }
  ]
 }

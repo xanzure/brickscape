@@ -19,7 +19,12 @@ instructions.
 
 <p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/showcase.png" alt="A BrickScape build: a tall grey rock cliff, a stream running past it, a terraced bank with a big oak, a birch, boulders and plants on a green baseplate" width="860"></p>
 <p align="center"><sub>Built by BrickScape from a <a href="https://github.com/xanzure/brickscape/blob/main/examples/showcase.json">seven-operation plan</a>:
-1,514 parts, every one held by a real connection, no two parts intersecting.</sub></p>
+1,466 parts, every one held by a real connection, no two parts intersecting.</sub></p>
+
+> **Benchmark** (blind, position-swapped judging against plain Claude on 6 briefs): BrickScape was
+> **8.9x cheaper and 7.9x faster**, **all 6 of its builds pass the strict checker (plain Claude: 0 of 6)**,
+> and it won **accuracy 5-1-0** and **looks 5-1-0** (wins-ties-losses), with average judge scores of
+> 8.2 vs 4.2 and 7.4 vs 4.8 out of 10. [Details](#benchmark).
 
 ## Contents
 - [How it works](#how-it-works)
@@ -206,10 +211,57 @@ pass the strict check on their own (`pytest`).
 
 ## Benchmark
 
-Does an AI design better LEGO with BrickScape than without it? The benchmark answers this
-with blind, position-swapped judging.
+Does an AI design better LEGO with BrickScape than without it? Six briefs, each built twice by
+fresh Claude Code sessions (one with BrickScape, one without), then scored with blind,
+position-swapped judging. Run `v1`, 2026-11-27.
 
-**Prompts** ([bench/prompts.json](https://github.com/xanzure/brickscape/blob/main/bench/prompts.json)): three broad briefs, three with
+### Results
+
+| | BrickScape | plain Claude |
+|---|---|---|
+| total build time (6 builds) | **21.5 min** | 170.5 min (**7.9x** longer) |
+| total cost, API-equivalent | **$2.06** | $18.35 (**8.9x** more) |
+| builds passing the strict checker | **6 / 6** | 0 / 6 |
+| accuracy (wins-ties-losses for BrickScape) | **5-1-0**, average score **8.2** / 10 | 4.2 / 10 |
+| looks (wins-ties-losses for BrickScape) | **5-1-0**, average score **7.4** / 10 | 4.8 / 10 |
+| efficiency (cheaper and faster) | **6-0-0** | |
+
+Win rate / win-or-tie rate: efficiency 100% / 100%, accuracy 83% / 100%, looks 83% / 100%.
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/cost.svg" alt="Cost per build in US dollars for each prompt, BrickScape against plain Claude" width="560">
+<img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/minutes.svg" alt="Minutes per build for each prompt, BrickScape against plain Claude" width="560">
+</p>
+<p align="center">
+<img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/scores.svg" alt="Average judge score out of 10 for accuracy and looks" width="560">
+<img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/validity.svg" alt="Share of builds passing the strict checker: BrickScape 100 percent, plain Claude 0 percent" width="560">
+</p>
+
+| prompt | kind | cheaper | faster | accuracy (scores) | looks (scores) | BrickScape: parts, valid, min, $ | plain: parts, valid, min, $ |
+|---|---|---|---|---|---|---|---|
+| big-tree-16 | constrained | 12.4x | 10.2x | win (8.5 vs 3.0) | tie (6.5 vs 6.5) | 180, yes, 3.0, 0.31 | 127, no, 30.6, 3.86 |
+| cliff-grey-green | constrained | 5.2x | 5.4x | tie (6.5 vs 7.5) | win (7.0 vs 2.0) | 910, yes, 2.7, 0.29 | 120, no, 14.6, 1.50 |
+| forest-stream | broad | 9.0x | 6.1x | win (8.5 vs 2.5) | win (7.5 vs 5.5) | 665, yes, 3.9, 0.34 | 103, no, 23.9, 3.02 |
+| garden-20 | constrained | 5.0x | 5.4x | win (9.0 vs 2.5) | win (8.0 vs 5.0) | 229, yes, 4.6, 0.47 | 121, no, 25.0, 2.36 |
+| lakeside | broad | 11.3x | 8.4x | win (8.5 vs 5.0) | win (8.0 vs 4.5) | 518, yes, 3.7, 0.32 | 82, no, 30.9, 3.61 |
+| mountain-pass | broad | 12.1x | 12.6x | win (8.0 vs 4.5) | win (7.5 vs 5.5) | 1868, yes, 3.6, 0.33 | 220, no, 45.5, 3.99 |
+
+<p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/pairs.png" alt="Front-left renders of all six benchmark prompts: BrickScape's build on the left, plain Claude's on the right" width="760"></p>
+<p align="center"><sub>Every benchmark build from the same front-left camera: BrickScape left, plain Claude right.</sub></p>
+
+What the judges said, in short: plain Claude's builds are much simpler (a flat blue slab for a
+lake, a single grey wall for a cliff, columns for a mountain pass) and none of them is
+buildable as delivered: every one has intersecting or floating parts, or colours LEGO doesn't
+make. The two ties are fair calls: on the cliff, one judge felt BrickScape's rock spread over the
+whole board instead of forming a clear wall along the back; on the big tree, each judge
+preferred a different tree.
+
+Costs are Claude Code's API-equivalent estimates per session; with a Claude subscription they
+count against the plan's usage instead of being billed.
+
+### Prompts
+
+[bench/prompts.json](https://github.com/xanzure/brickscape/blob/main/bench/prompts.json): three broad briefs, three with
 constraints, and one recreation from a reference photo.
 
 | id | kind | brief |
@@ -220,13 +272,15 @@ constraints, and one recreation from a reference photo.
 | garden-20 | constrained | On a 20 x 20 flat space: a garden with a pond, flower beds and a path; at most 400 parts. |
 | cliff-grey-green | constrained | On 32 x 16: a cliff along the back at least 4 bricks tall; only grey and green parts. |
 | big-tree-16 | constrained | On 16 x 16: one large tree with roots and undergrowth; fewer than 250 parts. |
-| waterfall-ref | reference | Recreate the diorama in a photo: a rock cliff with a waterfall, a stream, a large tree. |
+| waterfall-ref | reference | Recreate the diorama in a photo: a rock cliff with a waterfall, a stream, a large tree. *(in the benchmark, not in run v1 yet)* |
 
 The reference photo is ["Waterfall" by Fuchs (MOC-59853)](https://rebrickable.com/mocs/MOC-59853/fuchs/waterfall/)
 on Rebrickable, used with credit as the target for the recreation prompt. Both builders get the
 same photo, and the accuracy judges compare each build against it.
 
-**Method** ([bench/run.py](https://github.com/xanzure/brickscape/blob/main/bench/run.py)):
+### Method
+
+Code: [bench/run.py](https://github.com/xanzure/brickscape/blob/main/bench/run.py).
 1. For each prompt, two fresh headless Claude Code sessions get the same brief and the same
    requirements (real parts and colours, physically buildable, deliver `model.ldr`). Each runs
    in its own empty folder with no project instructions, no memory and no other MCP servers.
@@ -248,14 +302,14 @@ same photo, and the accuracy judges compare each build against it.
 5. Reported per category: **win rate** and **win-or-tie rate**, plus how many builds of each side
    pass the strict checker, and total cost and time.
 
-**Results:** not published yet. Run it with:
+Run it yourself (it resumes where it stopped, e.g. after hitting a usage limit):
 
 ```bash
-python bench/run.py                 # build, render, judge, report
+python bench/run.py --run myrun                 # build, render, judge, report
+python bench/run.py --run myrun --prompts waterfall-ref
 ```
 
-The report writes `bench/results/<date>/results.json` and the charts and table in
-`docs/bench/`, which this section will show.
+The report writes `bench/results/<run>/results.json` and the charts and table in `docs/bench/`.
 
 ## Command line
 
