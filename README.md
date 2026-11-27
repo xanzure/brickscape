@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/logo/logo.png" alt="BrickScape spelled in LEGO bricks on a green baseplate with trees, rocks and a stream" width="720"></p>
 
-# brickscape
+# BrickScape
 
 **Landscape, but for bricks.** An [MCP](https://modelcontextprotocol.io) server that lets an AI
 design LEGO builds that can actually be built.
