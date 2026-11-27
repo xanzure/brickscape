@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/assets/logo/logo.png" alt="BrickScape spelled in LEGO bricks on a green baseplate with trees, rocks and a stream" width="720"></p>
+![BrickScape spelled in LEGO bricks on a green baseplate with trees, rocks and a stream](https://raw.githubusercontent.com/xanzure/brickscape/main/assets/logo/logo.png)
 
 # BrickScape
 
@@ -18,9 +18,8 @@ real studs, checks the result against the parts' real shapes and connection poin
 what it can, and hands back a BrickLink Studio file, renders, a part list and step-by-step
 instructions.
 
-<p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/showcase.png" alt="A BrickScape build: a tall grey rock cliff, a stream running past it, a terraced bank with a big oak, a birch, boulders and plants on a green baseplate" width="860"></p>
-<p align="center"><sub>Built by BrickScape from a <a href="https://github.com/xanzure/brickscape/blob/main/examples/showcase.json">seven-operation plan</a>:
-1,466 parts, every one held by a real connection, no two parts intersecting.</sub></p>
+![A BrickScape build: a tall grey rock cliff, a stream running past it, a terraced bank with a big oak, a birch, boulders and plants on a green baseplate](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/showcase.png)
+*Built by BrickScape from a [seven-operation plan](https://github.com/xanzure/brickscape/blob/main/examples/showcase.json): 1,466 parts, every one held by a real connection, no two parts intersecting.*
 
 > **Benchmark** (blind, position-swapped judging against plain Claude on 6 briefs): BrickScape was
 > **8.9x cheaper and 7.9x faster**, **all 6 of its builds pass the strict checker (plain Claude: 0 of 6)**,
@@ -42,7 +41,7 @@ instructions.
 
 ## How it works
 
-<p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/pipeline.svg" alt="Pipeline: AI client sends a JSON plan; BrickScape compiles, repairs, validates and returns the deliverables" width="860"></p>
+![Pipeline: AI client sends a JSON plan; BrickScape compiles, repairs, validates and returns the deliverables](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/pipeline.svg)
 
 1. **Plan, don't place.** The client never computes LDraw coordinates. It sends operations
    such as `hill`, `path`, `water`, `tree` or `block` with areas in studs. The compiler turns
@@ -61,8 +60,8 @@ instructions.
 5. **Deliver.** A Studio `.io` file, four renders from fixed angles, a part list
    (CSV and BrickLink wanted-list XML), and on request PDF instructions.
 
-<p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/instructions_preview.png" alt="Pages of generated instructions: a cover and three steps, each with a parts box and the build so far" width="860"></p>
-<p align="center"><sub>Generated instructions: the build order follows the connection graph, so every step can really be built.</sub></p>
+![Pages of generated instructions: a cover and three steps, each with a parts box and the build so far](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/instructions_preview.png)
+*Generated instructions: the build order follows the connection graph, so every step can really be built.*
 
 ## Install
 
@@ -210,7 +209,7 @@ The checker was tuned on real models made by human designers in BrickLink Studio
 remaining reports are mostly parts the connection data doesn't cover, such as some flower
 stems), and it immediately found real problems in this project's own earlier generators:
 
-<p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/collisions_before_after.svg" alt="Bar chart: intersecting part pairs before and after the fit-aware placement rewrite. Terraced hill 89 to 9, rolling hills 63 to 13, rock cliff 27 to 0, river 5 to 4" width="560"></p>
+![Bar chart: intersecting part pairs before and after the fit-aware placement rewrite. Terraced hill 89 to 9, rolling hills 63 to 13, rock cliff 27 to 0, river 5 to 4](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/collisions_before_after.svg)
 
 Those remaining pairs are what the repair step then removes. All 25 plant and rock generators
 pass the strict check on their own (`pytest`).
@@ -234,14 +233,10 @@ position-swapped judging. Run `v1`, 2026-11-27.
 
 Win rate / win-or-tie rate: efficiency 100% / 100%, accuracy 83% / 100%, looks 83% / 100%.
 
-<p align="center">
-<img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/cost.svg" alt="Cost per build in US dollars for each prompt, BrickScape against plain Claude" width="560">
-<img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/minutes.svg" alt="Minutes per build for each prompt, BrickScape against plain Claude" width="560">
-</p>
-<p align="center">
-<img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/scores.svg" alt="Average judge score out of 10 for accuracy and looks" width="560">
-<img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/validity.svg" alt="Share of builds passing the strict checker: BrickScape 100 percent, plain Claude 0 percent" width="560">
-</p>
+![Cost per build in US dollars for each prompt, BrickScape against plain Claude](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/cost.svg)
+![Minutes per build for each prompt, BrickScape against plain Claude](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/minutes.svg)
+![Average judge score out of 10 for accuracy and looks](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/scores.svg)
+![Share of builds passing the strict checker: BrickScape 100 percent, plain Claude 0 percent](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/validity.svg)
 
 | prompt | kind | cheaper | faster | accuracy (scores) | looks (scores) | BrickScape: parts, valid, min, $ | plain: parts, valid, min, $ |
 |---|---|---|---|---|---|---|---|
@@ -252,8 +247,8 @@ Win rate / win-or-tie rate: efficiency 100% / 100%, accuracy 83% / 100%, looks 8
 | lakeside | broad | 11.3x | 8.4x | win (8.5 vs 5.0) | win (8.0 vs 4.5) | 518, yes, 3.7, 0.32 | 82, no, 30.9, 3.61 |
 | mountain-pass | broad | 12.1x | 12.6x | win (8.0 vs 4.5) | win (7.5 vs 5.5) | 1868, yes, 3.6, 0.33 | 220, no, 45.5, 3.99 |
 
-<p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/pairs.png" alt="Front-left renders of all six benchmark prompts: BrickScape's build on the left, plain Claude's on the right" width="760"></p>
-<p align="center"><sub>Every benchmark build from the same front-left camera: BrickScape left, plain Claude right.</sub></p>
+![Front-left renders of all six benchmark prompts: BrickScape's build on the left, plain Claude's on the right](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/bench/pairs.png)
+*Every benchmark build from the same front-left camera: BrickScape left, plain Claude right.*
 
 What the judges said, in short: plain Claude's builds are much simpler (a flat blue slab for a
 lake, a single grey wall for a cliff, columns for a mountain pass) and none of them is
