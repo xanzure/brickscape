@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,8 +8,22 @@ version = "0.1.0"
 description = "MCP server for designing LEGO builds that can actually be built: terrain generators, strict connection and collision checks, renders, part lists and instructions."
 readme = "README.md"
 license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
+authors = [{ name = "xanzure" }]
+keywords = ["mcp", "model-context-protocol", "lego", "ldraw", "bricklink", "studio", "3d", "generative-design"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: POSIX :: Linux",
+  "Topic :: Multimedia :: Graphics :: 3D Modeling",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = ["numpy>=1.24", "pillow>=10", "ldraw-mcp>=0.3"]
+
+[project.urls]
+Homepage = "https://github.com/xanzure/brickscape"
+Repository = "https://github.com/xanzure/brickscape"
+Issues = "https://github.com/xanzure/brickscape/issues"
 
 [project.optional-dependencies]
 test = ["pytest>=8"]

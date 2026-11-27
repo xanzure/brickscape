@@ -1,6 +1,8 @@
-<p align="center"><img src="assets/logo/logo.png" alt="BrickScape spelled in LEGO bricks on a green baseplate with trees, rocks and a stream" width="720"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/assets/logo/logo.png" alt="BrickScape spelled in LEGO bricks on a green baseplate with trees, rocks and a stream" width="720"></p>
 
 # BrickScape
+
+<!-- mcp-name: io.github.xanzure/brickscape -->
 
 [![tests](https://github.com/xanzure/brickscape/actions/workflows/tests.yml/badge.svg)](https://github.com/xanzure/brickscape/actions/workflows/tests.yml)
 
@@ -15,8 +17,8 @@ real studs, checks the result against the parts' real shapes and connection poin
 what it can, and hands back a BrickLink Studio file, renders, a part list and step-by-step
 instructions.
 
-<p align="center"><img src="docs/img/showcase.png" alt="A BrickScape build: a tall grey rock cliff, a stream running past it, a terraced bank with a big oak, a birch, boulders and plants on a green baseplate" width="860"></p>
-<p align="center"><sub>Built by BrickScape from a <a href="examples/showcase.json">seven-operation plan</a>:
+<p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/showcase.png" alt="A BrickScape build: a tall grey rock cliff, a stream running past it, a terraced bank with a big oak, a birch, boulders and plants on a green baseplate" width="860"></p>
+<p align="center"><sub>Built by BrickScape from a <a href="https://github.com/xanzure/brickscape/blob/main/examples/showcase.json">seven-operation plan</a>:
 1,514 parts, every one held by a real connection, no two parts intersecting.</sub></p>
 
 ## Contents
@@ -34,7 +36,7 @@ instructions.
 
 ## How it works
 
-<p align="center"><img src="docs/img/pipeline.svg" alt="Pipeline: AI client sends a JSON plan; BrickScape compiles, repairs, validates and returns the deliverables" width="860"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/pipeline.svg" alt="Pipeline: AI client sends a JSON plan; BrickScape compiles, repairs, validates and returns the deliverables" width="860"></p>
 
 1. **Plan, don't place.** The client never computes LDraw coordinates. It sends operations
    such as `hill`, `path`, `water`, `tree` or `block` with areas in studs. The compiler turns
@@ -53,7 +55,7 @@ instructions.
 5. **Deliver.** A Studio `.io` file, four renders from fixed angles, a part list
    (CSV and BrickLink wanted-list XML), and on request PDF instructions.
 
-<p align="center"><img src="docs/img/instructions_preview.png" alt="Pages of generated instructions: a cover and three steps, each with a parts box and the build so far" width="860"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/instructions_preview.png" alt="Pages of generated instructions: a cover and three steps, each with a parts box and the build so far" width="860"></p>
 <p align="center"><sub>Generated instructions: the build order follows the connection graph, so every step can really be built.</sub></p>
 
 ## Install
@@ -197,7 +199,7 @@ The checker was tuned on real models made by human designers in BrickLink Studio
 remaining reports are mostly parts the connection data doesn't cover, such as some flower
 stems), and it immediately found real problems in this project's own earlier generators:
 
-<p align="center"><img src="docs/img/collisions_before_after.svg" alt="Bar chart: intersecting part pairs before and after the fit-aware placement rewrite. Terraced hill 89 to 9, rolling hills 63 to 13, rock cliff 27 to 0, river 5 to 4" width="560"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/collisions_before_after.svg" alt="Bar chart: intersecting part pairs before and after the fit-aware placement rewrite. Terraced hill 89 to 9, rolling hills 63 to 13, rock cliff 27 to 0, river 5 to 4" width="560"></p>
 
 Those remaining pairs are what the repair step then removes. All 25 plant and rock generators
 pass the strict check on their own (`pytest`).
@@ -207,7 +209,7 @@ pass the strict check on their own (`pytest`).
 Does an AI design better LEGO with BrickScape than without it? The benchmark answers this
 with blind, position-swapped judging.
 
-**Prompts** ([bench/prompts.json](bench/prompts.json)): three broad briefs, three with
+**Prompts** ([bench/prompts.json](https://github.com/xanzure/brickscape/blob/main/bench/prompts.json)): three broad briefs, three with
 constraints, and one recreation from a reference photo.
 
 | id | kind | brief |
@@ -224,7 +226,7 @@ The reference photo is ["Waterfall" by Fuchs (MOC-59853)](https://rebrickable.co
 on Rebrickable, used with credit as the target for the recreation prompt. Both builders get the
 same photo, and the accuracy judges compare each build against it.
 
-**Method** ([bench/run.py](bench/run.py)):
+**Method** ([bench/run.py](https://github.com/xanzure/brickscape/blob/main/bench/run.py)):
 1. For each prompt, two fresh headless Claude Code sessions get the same brief and the same
    requirements (real parts and colours, physically buildable, deliver `model.ldr`). Each runs
    in its own empty folder with no project instructions, no memory and no other MCP servers.

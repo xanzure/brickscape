@@ -1,0 +1,51 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.xanzure/brickscape",
+  "title": "BrickScape",
+  "description": "Design LEGO builds that can really be built: checked connections, Studio files, instructions.",
+  "repository": {
+    "url": "https://github.com/xanzure/brickscape",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "brickscape",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "BRICKSCAPE_OUT",
+          "description": "Folder where builds are saved (default ./brickscape-out)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "BRICKSCAPE_SOURCE",
+          "description": "Default part source: lego or gobricks",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "LDRAW_LIBRARY_PATH",
+          "description": "LDraw parts library (default ~/.ldraw)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "LDRAW_MCP_BLENDER",
+          "description": "Blender binary for renders (default: blender on PATH)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

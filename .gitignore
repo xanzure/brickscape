@@ -7,3 +7,4 @@ out/
 *.blend1
 .venv/
 bench/results/*/*/
+dist/
