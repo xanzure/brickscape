@@ -18,7 +18,19 @@ from mcp.types import ToolAnnotations
 from brickscape.plan import PlanError, compile_plan, op_reference
 from brickscape.schema import Plan
 
-mcp = MCPServer("brickscape", version=__version__)
+INSTRUCTIONS = """BrickScape designs LEGO builds that can really be built. Never write LDraw coordinates
+by hand: describe the build as a JSON plan and let `build` place every part on real studs.
+
+Workflow: `guide` once (operations, coordinates, design rules) -> `build` a plan -> `render`
+and look at all 4 views -> change the plan and `build` again at least once -> deliver with
+`export` (Studio .io), `parts_list` (CSV + BrickLink wanted list) and, if asked,
+`instructions` (PDF). With a reference photo use `compare`; with a reference build file use
+`study_reference`. `check` validates any model file. `search_parts` / `part_info` look up
+parts. Coordinates: studs, z = 0 is the front edge; heights in plates (3 plates = 1 brick).
+Part source: "lego" (default) or "gobricks"."""
+
+mcp = MCPServer("brickscape", title="BrickScape", version=__version__, instructions=INSTRUCTIONS,
+                website_url="https://github.com/xanzure/brickscape")
 
 Source = Annotated[Literal["lego", "gobricks"], Field(description="Part source: 'lego' (official LEGO parts and colours, default) or 'gobricks' (GoBricks moulds, colours and prices)")]
 Name = Annotated[str, Field(description="The build's name, as given in its plan (see build)")]
