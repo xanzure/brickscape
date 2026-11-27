@@ -2,6 +2,8 @@
 
 # BrickScape
 
+[![tests](https://github.com/xanzure/brickscape/actions/workflows/tests.yml/badge.svg)](https://github.com/xanzure/brickscape/actions/workflows/tests.yml)
+
 **Landscape, but for bricks.** An [MCP](https://modelcontextprotocol.io) server that lets an AI
 design LEGO builds that can actually be built.
 

@@ -1,0 +1,46 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[test]"
+
+      # LDraw library, LDCad connection data and Rebrickable tables (no Blender: tests don't render)
+      - name: Cache part data
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.ldraw
+            ~/.cache/brickscape
+          key: partdata-v1-${{ hashFiles('src/brickscape/core/geom.py') }}
+          restore-keys: partdata-v1-
+
+      - name: Download part data
+        run: |
+          if [ ! -d ~/.ldraw/parts ]; then
+            curl -sSfL -o /tmp/complete.zip https://library.ldraw.org/library/updates/complete.zip
+            unzip -q /tmp/complete.zip -d /tmp/ldraw
+            mkdir -p ~/.ldraw && cp -r /tmp/ldraw/ldraw/. ~/.ldraw/
+          fi
+          python -c "from brickscape.catalog import lego; from brickscape.core import snaps; print(lego.download()); print(snaps.download())"
+
+      - name: Test
+        run: pytest -q
