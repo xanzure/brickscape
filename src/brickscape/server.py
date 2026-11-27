@@ -28,10 +28,24 @@ WRITES = ToolAnnotations(read_only_hint=False, destructive_hint=False, idempoten
 OUT = os.path.abspath(os.path.expanduser(os.environ.get("BRICKSCAPE_OUT", "brickscape-out")))
 
 
+NEEDS_DATA = {"search_parts", "part_info", "build", "render", "parts_list", "export", "instructions",
+              "compare", "study_reference", "check"}
+
+
+def _missing_data():
+    from brickscape.config import LDRAW
+    if not os.path.isdir(os.path.join(LDRAW, "parts")):
+        return (f"The LDraw parts library is not installed (looked in {LDRAW}). "
+                "Run `brickscape setup` once, or set LDRAW_LIBRARY_PATH.")
+    return None
+
+
 def _tool(fn):
     """Surface expected failures to the client as ToolError, with their message."""
     @wraps(fn)
     def run(*a, **k):
+        if fn.__name__ in NEEDS_DATA and (msg := _missing_data()):
+            raise ToolError(msg)
         try:
             return fn(*a, **k)
         except (PlanError, ValueError, OSError, RuntimeError, KeyError) as e:
