@@ -16,14 +16,37 @@ Part source S: lego (default) or gobricks.
 import argparse, sys
 
 
+LDRAW_ZIP = "https://library.ldraw.org/library/updates/complete.zip"
+UA = {"User-Agent": "brickscape (+https://github.com/xanzure/brickscape)"}
+
+
+def ldraw_library(force=False):
+    """Download and unpack the LDraw parts library into LDRAW_LIBRARY_PATH (~/.ldraw).
+    (library.ldraw.org refuses Python's default user agent, so this names the client.)"""
+    import os, shutil, tempfile, urllib.request, zipfile
+    from brickscape.config import LDRAW
+    if os.path.isdir(os.path.join(LDRAW, "parts")) and not force:
+        return LDRAW
+    with tempfile.TemporaryDirectory() as td:
+        zp = os.path.join(td, "complete.zip")
+        req = urllib.request.Request(LDRAW_ZIP, headers=UA)
+        with urllib.request.urlopen(req, timeout=600) as r, open(zp, "wb") as f:
+            shutil.copyfileobj(r, f)
+        zipfile.ZipFile(zp).extractall(td)
+        os.makedirs(LDRAW, exist_ok=True)
+        shutil.copytree(os.path.join(td, "ldraw"), LDRAW, dirs_exist_ok=True)
+    return LDRAW
+
+
 def setup():
     from brickscape.catalog import lego
     from brickscape.core import snaps
     import subprocess
-    print("LDraw library + Blender add-on (ldraw-mcp-setup) ...")
-    subprocess.run([sys.executable, "-m", "ldraw_mcp.setup_cli"], check=False)
-    print("official LEGO part data (Rebrickable) ->", lego.download())
-    print("connection data (LDCad shadow library) ->", snaps.download())
+    print("LDraw parts library ->", ldraw_library(), flush=True)
+    print("Blender add-on (ldraw-mcp-setup; skipped if Blender isn't installed) ...", flush=True)
+    subprocess.run([sys.executable, "-m", "ldraw_mcp.setup_cli", "--skip-library"], check=False)
+    print("official LEGO part data (Rebrickable) ->", lego.download(), flush=True)
+    print("connection data (LDCad shadow library) ->", snaps.download(), flush=True)
 
 
 def main(argv=None):
