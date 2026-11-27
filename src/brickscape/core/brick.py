@@ -511,5 +511,8 @@ def from_ldr(path, name=None):
             q.soft, q.free = True, True
         elif any(w in d for w in BOX_POOR_WORDS):
             q.soft = True
+    if not b.roots and b.pieces:      # no baseplate: whatever rests on the table is the ground
+        low = max(q.hi[1] for q in b.pieces)          # LDraw +y is down: the lowest bottom
+        b.roots = {i for i, q in enumerate(b.pieces) if abs(q.hi[1] - low) < 0.5}
     b.missing = dict(missing)
     return b

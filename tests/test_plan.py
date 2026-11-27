@@ -24,7 +24,8 @@ def test_small_plan_is_valid():
 
 def test_odd_board_gets_plate_floor():
     b, r = build({"name": "t", "board": {"width": 20, "depth": 20}, "ops": []})
-    assert len(b.roots) > 1 and r["pieces"] == 0
+    assert len(b.roots) > 1 and r["pieces"] > 0          # bottom layer = ground, top layer locks it
+    assert not any(r["checks"].values()), r["checks"]
 
 
 def test_unknown_op_names_the_op():

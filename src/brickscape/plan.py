@@ -116,11 +116,13 @@ class Compiler:
             for x in range(0, self.W, step):
                 for z in range(0, self.D, step):
                     self.b.base(x, z, color=bc, part="3811" if step == 32 else "3867")
-        else:                                        # any other size: a floor of plates
-            cells = {(x, z) for x in range(self.W) for z in range(self.D)}
+        else:                                        # any other size: a floor of two crossed plate
+            cells = {(x, z) for x in range(self.W) for z in range(self.D)}   # layers = one rigid piece
             for (x, z, w, d) in pack(cells, PLATES):
-                put_rect(self.b, PLATES, bc, x, z, w, d, -1)
+                put_rect(self.b, PLATES, bc, x, z, w, d, -2)
                 self.b.roots.add(len(self.b.pieces) - 1)
+            for (x, z, w, d) in pack(cells, PLATES, rotate=True):
+                put_rect(self.b, PLATES, bc, x, z, w, d, -1)
         self.b.step()
         self.board = {(x, z) for x in range(self.W) for z in range(self.D)}
         self.surface = {}          # cell -> top height in plates (missing = 0)
