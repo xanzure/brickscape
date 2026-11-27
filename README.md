@@ -5,6 +5,7 @@
 <!-- mcp-name: io.github.xanzure/brickscape -->
 
 [![tests](https://github.com/xanzure/brickscape/actions/workflows/tests.yml/badge.svg)](https://github.com/xanzure/brickscape/actions/workflows/tests.yml)
+[![BrickScape MCP server](https://glama.ai/mcp/servers/xanzure/brickscape/badges/score.svg)](https://glama.ai/mcp/servers/xanzure/brickscape)
 
 **Landscape, but for bricks.** An [MCP](https://modelcontextprotocol.io) server that lets an AI
 design LEGO builds that can actually be built.
