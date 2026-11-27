@@ -92,16 +92,16 @@ def report(run_dir, docs=None):
     for cat in CATS:
         k = summ["categories"][cat]
         open(os.path.join(docs, f"{cat}.svg"), "w").write(_stack_svg(
-            f"{cat.title()}: brickscape vs plain Claude",
+            f"{cat.title()}: BrickScape vs plain Claude",
             [("win", k["wins"], COL["win"]), ("tie", k["ties"], COL["tie"]), ("loss", k["losses"], COL["loss"])]))
     open(os.path.join(docs, "validity.svg"), "w").write(_bar_svg(
-        "Builds that pass the strict checker", [("valid builds", [("with brickscape", summ["valid_rate"]["mcp"], COL["mcp"]),
+        "Builds that pass the strict checker", [("valid builds", [("with BrickScape", summ["valid_rate"]["mcp"], COL["mcp"]),
                                                                  ("plain Claude", summ["valid_rate"]["base"], COL["base"])])], 100, "%"))
     mx = max([max(r["mcp"]["minutes"], r["base"]["minutes"]) for r in rows] + [1])
     open(os.path.join(docs, "minutes.svg"), "w").write(_bar_svg(
-        "Minutes per build", [(r["id"], [("brickscape", r["mcp"]["minutes"], COL["mcp"]), ("plain", r["base"]["minutes"], COL["base"])])
+        "Minutes per build", [(r["id"], [("BrickScape", r["mcp"]["minutes"], COL["mcp"]), ("plain", r["base"]["minutes"], COL["base"])])
                               for r in rows], mx))
-    md = ["| prompt | kind | efficiency | accuracy | looks | brickscape: parts, valid, min, $ | plain: parts, valid, min, $ |",
+    md = ["| prompt | kind | efficiency | accuracy | looks | BrickScape: parts, valid, min, $ | plain: parts, valid, min, $ |",
           "|---|---|---|---|---|---|---|"]
     f = lambda c: f"{c['pieces']}, {'yes' if c['valid'] else 'no'}, {c['minutes']}, {c['cost'] or 0:.2f}"
     for r in rows:

@@ -40,7 +40,7 @@ def _dir(name):
     return d
 
 
-GUIDE = """# brickscape guide
+GUIDE = """# BrickScape guide
 
 You design LEGO builds by sending a JSON **build plan** to `build`. The toolkit turns each
 operation into real parts on real studs, so you never compute LDraw coordinates. Every result
@@ -80,9 +80,9 @@ LDraw colour names or codes: green 2, bright green 10, dark green 288, olive gre
 dark tan 28, reddish brown 70, dark brown 308, light bluish grey 71, dark bluish grey 72,
 black 0, white 15, blue 1, dark blue 272, medium azure 322, trans light blue 43.
 
-## Part sources
+## Part sources (brick companies)
 `source` = "lego" (default: parts and colours LEGO has produced) or "gobricks" (GoBricks
-moulds and colours, with prices).
+moulds and colours, with prices). Validation, colour repair and part lists follow the source.
 """
 
 EXAMPLE = {
@@ -100,7 +100,7 @@ EXAMPLE = {
 @mcp.tool()
 @_tool
 def guide() -> str:
-    """How to plan a brickscape build: workflow, coordinates, every operation, style tips and
+    """How to plan a BrickScape build: workflow, coordinates, every operation, style tips and
     an example plan. Read this first."""
     return GUIDE.format(ops=op_reference(), example=json.dumps(EXAMPLE, indent=1))
 

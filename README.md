@@ -6,21 +6,22 @@
 design LEGO builds that can actually be built.
 
 Ask a language model for a LEGO model and you usually get a file with parts floating in the
-air, bricks pushed through each other, and part numbers that don't exist. brickscape gives the
+air, bricks pushed through each other, and part numbers that don't exist. BrickScape gives the
 model a better way to work: it describes *what* it wants in a short JSON plan (a terraced
-hill here, a cobbled path there, an oak by the stream), and brickscape places every part on
+hill here, a cobbled path there, an oak by the stream), and BrickScape places every part on
 real studs, checks the result against the parts' real shapes and connection points, repairs
 what it can, and hands back a BrickLink Studio file, renders, a part list and step-by-step
 instructions.
 
 <p align="center"><img src="docs/img/example_views.png" alt="A forest clearing build from the four standard views: a terraced hill, a rock outcrop, a cobbled path, boulders, an oak tree and plants" width="860"></p>
-<p align="center"><sub>The <a href="examples/forest-clearing.json">example plan</a> (six operations) as built by brickscape:
+<p align="center"><sub>The <a href="examples/forest-clearing.json">example plan</a> (six operations) as built by BrickScape:
 806 parts, every one connected, no intersections.</sub></p>
 
 ## Contents
 - [How it works](#how-it-works)
 - [Install](#install)
 - [Tools](#tools)
+- [Brick companies](#brick-companies)
 - [Build plans](#build-plans)
 - [What "buildable" means here](#what-buildable-means-here)
 - [Benchmark](#benchmark)
@@ -30,7 +31,7 @@ instructions.
 
 ## How it works
 
-<p align="center"><img src="docs/img/pipeline.svg" alt="Pipeline: AI client sends a JSON plan; brickscape compiles, repairs, validates and returns the deliverables" width="860"></p>
+<p align="center"><img src="docs/img/pipeline.svg" alt="Pipeline: AI client sends a JSON plan; BrickScape compiles, repairs, validates and returns the deliverables" width="860"></p>
 
 1. **Plan, don't place.** The client never computes LDraw coordinates. It sends operations
    such as `hill`, `path`, `water`, `tree` or `block` with areas in studs. The compiler turns
@@ -95,11 +96,31 @@ claude mcp add brickscape -- brickscape-mcp          # Claude Code
 | `parts_list` | `parts.csv` and `bricklink.xml` (a BrickLink wanted list); prices in GoBricks mode. |
 | `export` | A BrickLink Studio `.io` file. |
 | `instructions` | Step-by-step building instructions as a PDF (plus an `.ldr` with `STEP`s for Studio). |
-| `check` | Strictly validate any `.ldr`, `.mpd` or `.io` file, including ones not made by brickscape. |
+| `check` | Strictly validate any `.ldr`, `.mpd` or `.io` file, including ones not made by BrickScape. |
 
-**Part sources.** `lego` (default) accepts only part/colour pairs LEGO has produced, from
-Rebrickable's element data. `gobricks` uses GoBricks moulds, colours and prices; it needs a
-GoBricks catalog in `~/.cache/brickscape/gobricks` (not distributed).
+## Brick companies
+
+BrickScape isn't tied to one brick maker. Every build is checked against a **part source**: the
+list of parts, and of the colours each part comes in, that a company actually makes. Pass
+`source` to `build`, `check`, `search_parts`, `part_info` and `parts_list`, or set
+`BRICKSCAPE_SOURCE`.
+
+| Source | Company | What it knows | Data |
+|---|---|---|---|
+| `lego` (default) | LEGO | Every part/colour pair LEGO has produced as an element | Rebrickable's free downloads, fetched by `brickscape setup` |
+| `gobricks` | GoBricks / Brickwith | GoBricks moulds, the colours each is sold in, prices | a GoBricks catalog file in `~/.cache/brickscape/gobricks` (not distributed) |
+
+What changes with the source:
+- **Validation:** parts the company doesn't make, and colours a part doesn't come in, are
+  reported. A part that GoBricks makes under a different mould number is matched to it.
+- **Repair:** a colour that doesn't exist for a part is swapped for the closest colour that
+  does at *that* company, so a GoBricks build only uses GoBricks colours.
+- **Parts lists:** GoBricks mode adds a price for each part and an estimated total.
+- **Search:** `search_parts` and `part_info` show availability and colours for that company.
+
+Adding another company (Mould King, Cada, BrickLink stock, your own collection) is one small
+class in `src/brickscape/catalog/` with four methods: `resolve(part)`, `colours(part)`,
+`price(part)` and `substitute(part)`.
 
 ## Build plans
 
@@ -164,7 +185,7 @@ pass the strict check on their own (`pytest`).
 
 ## Benchmark
 
-Does an AI design better LEGO with brickscape than without it? The benchmark answers this
+Does an AI design better LEGO with BrickScape than without it? The benchmark answers this
 with blind, position-swapped judging.
 
 **Prompts** ([bench/prompts.json](bench/prompts.json)): three broad briefs and three with
@@ -183,15 +204,23 @@ constraints.
 1. For each prompt, two fresh headless Claude Code sessions get the same brief and the same
    requirements (real parts and colours, physically buildable, deliver `model.ldr`). Each runs
    in its own empty folder with no project instructions, no memory and no other MCP servers.
-   One has brickscape; the other has the same file and shell tools and the LDraw library path.
+   One has BrickScape; the other has the same file and shell tools and the LDraw library path.
 2. Both models go through the same renderer (the same four camera angles) and the same strict
    checker.
-3. A fresh Claude session judges: it sees the brief, the two render sheets labelled A and B and
-   both checker summaries, and picks the better build. A second fresh session judges again with
-   A and B swapped, so the position can't decide.
-4. brickscape wins a prompt if it wins both rounds, ties if the rounds split, and loses
-   otherwise. Results: **win rate** and **win-or-tie rate**, plus how many builds of each side
-   pass the strict checker.
+3. Each prompt is scored in three categories, each a win, tie or loss for BrickScape:
+   - **Efficiency** (measured, no judge): cost and wall-clock time of the build session.
+     Cheaper *and* faster is a win, worse on both is a loss, a mix is a tie.
+   - **Accuracy** (judged): how closely the build delivers the brief and keeps its limits
+     (board size, part count, colours, required features), and whether it can be built. The
+     judge sees the renders plus measured facts about each build: size, part count, colours
+     used and the strict checker's results.
+   - **Looks** (judged): the renders only, nothing else, and the judge is told to score
+     appearance alone.
+4. Every judged category uses two fresh Claude sessions with A and B swapped, so the position
+   can't decide it: BrickScape wins both rounds = win, one each = tie, neither = loss. A prompt
+   where neither side produced a model is left out rather than scored.
+5. Reported per category: **win rate** and **win-or-tie rate**, plus how many builds of each side
+   pass the strict checker, and total cost and time.
 
 **Results:** not published yet. Run it with:
 
