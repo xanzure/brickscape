@@ -101,6 +101,10 @@ def build_one(run_dir, pr, cond, ldraw):
     else:
         note = BASE_NOTE.format(ldraw=ldraw)
     prompt = f"Brief: {pr['prompt']}\n\n{RULES}\n\n{note}"
+    if pr.get("reference"):                  # both builders get the same reference photo
+        ext = os.path.splitext(pr["reference"])[1]
+        shutil.copy(os.path.join(HERE, pr["reference"]), os.path.join(d, "reference" + ext))
+        prompt += f"\n\nThe reference photo is ./reference{ext} (open it with the Read tool)."
     r = claude(prompt, d, tools, cfg)
     if "limit" in str(r.get("result", "")).lower() and r.get("is_error"):
         print(f"{pr['id']} {cond}: usage limit hit, rerun later", flush=True)
@@ -179,7 +183,14 @@ def judge(run_dir, pr, mode="accuracy"):
             continue
         shutil.copy(ca["sheet"], os.path.join(jd, "A.png"))
         shutil.copy(cbb["sheet"], os.path.join(jd, "B.png"))
-        r = claude(JUDGE[mode].format(prompt=pr["prompt"], va=summary(ca), vb=summary(cbb)), jd, ["Read"], timeout=900)
+        q = JUDGE[mode].format(prompt=pr["prompt"], va=summary(ca), vb=summary(cbb))
+        if pr.get("reference") and mode == "accuracy":
+            ext = os.path.splitext(pr["reference"])[1]
+            shutil.copy(os.path.join(HERE, pr["reference"]), os.path.join(jd, "REFERENCE" + ext))
+            q = q.replace("Use the Read tool on A.png and B.png.",
+                          f"The brief's reference photo is REFERENCE{ext}: judge how closely each design matches it. "
+                          f"Use the Read tool on REFERENCE{ext}, A.png and B.png.")
+        r = claude(q, jd, ["Read"], timeout=900)
         txt = r.get("result", "")
         try:
             v = json.loads(txt[txt.index("{"):txt.rindex("}") + 1])

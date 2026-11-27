@@ -21,6 +21,8 @@ def args():
     p.add_argument("--out", required=True); p.add_argument("--parts")
     p.add_argument("--size", type=int, default=900); p.add_argument("--samples", type=int, default=12)
     p.add_argument("--ldraw-dir", default=str(Path.home() / ".ldraw"))
+    p.add_argument("--az", type=float, default=225); p.add_argument("--el", type=float, default=35)
+    p.add_argument("--transparent", action="store_true")
     return p.parse_args(argv)
 
 
@@ -88,8 +90,8 @@ def main():
     reset(); load(a.ldr, a.ldraw_dir)
     parts = sorted((o for o in bpy.context.scene.objects if o.type == "MESH" and o.name[:5].isdigit()),
                    key=lambda o: o.name)
-    sc, cam = setup(a.size, a.samples)
-    aim(cam, *bounds(parts))
+    sc, cam = setup(a.size, a.samples, transparent=a.transparent)
+    aim(cam, *bounds(parts), az=a.az, el=a.el)
     for k, n in enumerate(int(v) for v in a.steps.split(",")):
         for i, o in enumerate(parts):
             o.hide_render = i >= n

@@ -1,14 +1,39 @@
 [
- {"id": "forest-stream", "kind": "broad",
-  "prompt": "Design a small forest clearing with a stream running through it."},
- {"id": "mountain-pass", "kind": "broad",
-  "prompt": "Design a rocky mountain pass with a path winding between the rocks."},
- {"id": "lakeside", "kind": "broad",
-  "prompt": "Design a peaceful lakeside scene with a rocky shore and some trees."},
- {"id": "garden-20", "kind": "constrained",
-  "prompt": "On a 20 x 20 stud flat space, design a garden with a small pond, flower beds and a path. Use at most 400 parts."},
- {"id": "cliff-grey-green", "kind": "constrained",
-  "prompt": "On a 32 x 16 stud baseplate area, design a cliff along the back edge at least 4 bricks tall. Use only grey and green parts."},
- {"id": "big-tree-16", "kind": "constrained",
-  "prompt": "On a 16 x 16 stud baseplate, design one large tree with roots and undergrowth around it. Use fewer than 250 parts."}
+ {
+  "id": "forest-stream",
+  "kind": "broad",
+  "prompt": "Design a small forest clearing with a stream running through it."
+ },
+ {
+  "id": "mountain-pass",
+  "kind": "broad",
+  "prompt": "Design a rocky mountain pass with a path winding between the rocks."
+ },
+ {
+  "id": "lakeside",
+  "kind": "broad",
+  "prompt": "Design a peaceful lakeside scene with a rocky shore and some trees."
+ },
+ {
+  "id": "garden-20",
+  "kind": "constrained",
+  "prompt": "On a 20 x 20 stud flat space, design a garden with a small pond, flower beds and a path. Use at most 400 parts."
+ },
+ {
+  "id": "cliff-grey-green",
+  "kind": "constrained",
+  "prompt": "On a 32 x 16 stud baseplate area, design a cliff along the back edge at least 4 bricks tall. Use only grey and green parts."
+ },
+ {
+  "id": "big-tree-16",
+  "kind": "constrained",
+  "prompt": "On a 16 x 16 stud baseplate, design one large tree with roots and undergrowth around it. Use fewer than 250 parts."
+ },
+ {
+  "id": "waterfall-ref",
+  "kind": "reference",
+  "prompt": "Recreate the LEGO diorama shown in reference.webp as closely as you can: a grey rock cliff with a waterfall falling into a stream, a large tree, plants and rocks, on a green base of about the same size.",
+  "reference": "refs/waterfall-fuchs.webp",
+  "credit": "\"Waterfall\" by Fuchs (MOC-59853), https://rebrickable.com/mocs/MOC-59853/fuchs/waterfall/"
+ }
 ]

@@ -1,6 +1,7 @@
 """brickscape MCP server.
 
-Tools: guide, search_parts, part_info, build, render, parts_list, export, instructions, check.
+Tools: guide, search_parts, part_info, build, render, compare, study_reference, parts_list,
+export, instructions, check.
 Builds are saved under BRICKSCAPE_OUT (default ./brickscape-out), one folder per build name.
 """
 import json, os, re, tempfile, zipfile
@@ -55,6 +56,14 @@ held by a real connection (studs, bars, clips, hinges, pins) down to the basepla
    Do at least one improvement round: check the brief's size, part-count and colour limits,
    fill empty areas with detail, and make the main subject stand out.
 4. Deliver: `export` (Studio .io), `parts_list`, and `instructions` if asked.
+
+## References
+If the user gives you a reference photo or build, use it: it makes a much better result.
+- A photo: look at it, plan the same layout (where the rock, water, trees are, their sizes in
+  studs), then `compare` your build with the photo from the photo's viewpoint and fix the
+  biggest differences first.
+- A build file (.io / .ldr): `study_reference` tells you its size, density, colours and parts;
+  match its proportions and palette.
 
 ## Coordinates
 - Board: width x depth studs, multiples of 16 (32 = one baseplate). x = left to right,
@@ -273,21 +282,66 @@ def instructions(name: str, parts_per_step: int = 10) -> str:
     return f"{r['steps']} steps, {r['pages']} pages: {r['pdf']}\nordered model with STEP lines: {r['ldr']}"
 
 
+def _ldr_of(path):
+    """An .ldr path for .ldr/.mpd/.io input (.io is unpacked to a temp file)."""
+    p = os.path.expanduser(path)
+    if p.lower().endswith(".io"):
+        z = zipfile.ZipFile(p)
+        z.setpassword(b"soho0909")
+        q = os.path.join(tempfile.mkdtemp(), "model.ldr")
+        open(q, "wb").write(z.read("model.ldr"))
+        return q
+    return p
+
+
+@mcp.tool()
+@_tool
+def compare(name: str, reference: str, azimuth: float = 225, elevation: float = 30) -> Image:
+    """Put a saved build next to a reference photo: renders the build from the given camera
+    (renderer azimuth: 270 front, 225 front-left, 180 left; elevation in degrees) and returns
+    both side by side. Match the photo's viewpoint, then compare shapes, proportions, colours."""
+    from brickscape.review.render import compare as cmp
+    d = _dir(name)
+    out = os.path.join(d, "renders", "compare.png")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    cmp(os.path.join(d, "model.ldr"), os.path.expanduser(reference), out, azimuth, elevation, resolution=640)
+    return Image(data=Path(out).read_bytes(), format="png")
+
+
+@mcp.tool()
+@_tool
+def study_reference(path: str) -> str:
+    """Analyse a reference build (.ldr / .mpd / Studio .io) to learn from it: footprint and
+    height, part count and density, how hollow it is, share of sideways (SNOT) and angled parts,
+    part categories, main colours, and its 30 most used parts."""
+    from brickscape.io.analyze_ref import analyse
+    from brickscape.plan import colours
+    r = analyse(_ldr_of(path))
+    if not r.get("parts"):
+        return f"no parts found in {path}"
+    names = {v: k for k, v in colours().items()}
+    col = lambda L: ", ".join(f"{names.get(int(c), c)} {n}" for c, n in L)
+    return "\n".join([
+        f"{r['parts']} parts ({r['unique']} different), footprint {r['footprint_studs'][0]} x {r['footprint_studs'][1]} studs, "
+        f"{r['height_plates']} plates ({r['height_plates'] / 3:.1f} bricks) tall",
+        f"density: {r['parts_per_covered_stud']} parts per covered stud; filled under the surface: "
+        f"{round(100 * r['fill_ratio_under_surface'])}% (low = hollow)",
+        f"sideways (SNOT) parts: {r['sideways_pct']}%, parts at odd angles: {r['angled_pct']}%",
+        "categories: " + ", ".join(f"{k} {n}" for k, n in r["categories"]),
+        "colours: " + col(r["colours"]),
+        "top surface colours: " + col(r["top_surface_colours"]),
+        "most used parts:",
+        *[f"  {n:4d}x {p} {d}" for p, n, d in r["top_parts"]],
+    ])
+
+
 @mcp.tool()
 @_tool
 def check(path: str, source: str = "lego") -> str:
     """Strictly validate any .ldr / .mpd / Studio .io file."""
     from brickscape.core.brick import from_ldr
     from brickscape.validate import validate
-    p = os.path.expanduser(path)
-    if p.endswith(".io"):
-        z = zipfile.ZipFile(p)
-        z.setpassword(b"soho0909")
-        td = tempfile.mkdtemp()
-        q = os.path.join(td, "model.ldr")
-        open(q, "wb").write(z.read("model.ldr"))
-        p = q
-    b = from_ldr(p)
+    b = from_ldr(_ldr_of(path))
     for x in b.pieces:
         x.soft = x.free = False
     return _report(validate(b, source=source), [], {})

@@ -51,3 +51,27 @@ def _crop(im, margin=0.05):
         return im
     m = int(margin * max(box[2] - box[0], box[3] - box[1]))
     return im.crop((max(0, box[0] - m), max(0, box[1] - m), min(im.width, box[2] + m), min(im.height, box[3] + m)))
+
+
+def hero(ldr, out_png, azimuth=225, elevation=32, size=1400, samples=64, transparent=True, timeout=3600):
+    """One high-quality render (transparent background by default), cropped to the model."""
+    from PIL import Image
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "blender_steps.py")
+    with tempfile.TemporaryDirectory() as td:
+        n = sum(1 for l in open(ldr) if l.startswith("1 "))
+        cmd = [blender(), "-b", "--factory-startup", "-P", script, "--", "--ldr", os.path.abspath(ldr),
+               "--steps", str(n), "--out", td, "--size", str(size), "--samples", str(samples),
+               "--ldraw-dir", LDRAW, "--az", str(azimuth), "--el", str(elevation)] + (["--transparent"] if transparent else [])
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        src = os.path.join(td, "step_001.png")
+        if not os.path.exists(src):
+            raise RuntimeError("render failed:\n" + "\n".join((p.stdout + p.stderr).splitlines()[-12:]))
+        im = Image.open(src)
+        if im.mode == "RGBA":
+            bb = im.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
+            m = int(0.03 * max(bb[2] - bb[0], bb[3] - bb[1]))
+            im = im.crop((max(0, bb[0] - m), max(0, bb[1] - m), min(im.width, bb[2] + m), min(im.height, bb[3] + m)))
+        else:
+            im = _crop(im.convert("RGB"))
+        im.save(out_png)
+    return out_png

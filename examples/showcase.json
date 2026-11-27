@@ -1,0 +1,153 @@
+{
+ "name": "showcase",
+ "board": {
+  "width": 32,
+  "depth": 32
+ },
+ "seed": 7,
+ "ops": [
+  {
+   "op": "hill",
+   "area": {
+    "polygon": [
+     [
+      0,
+      12
+     ],
+     [
+      10,
+      15
+     ],
+     [
+      15,
+      22
+     ],
+     [
+      16,
+      32
+     ],
+     [
+      0,
+      32
+     ]
+    ],
+    "rough": 0.6
+   },
+   "height": 36,
+   "style": "rock",
+   "falloff": 6
+  },
+  {
+   "op": "hill",
+   "area": {
+    "ellipse": [
+     27,
+     28,
+     7,
+     5
+    ],
+    "rough": 0.5
+   },
+   "height": 8,
+   "style": "terraces"
+  },
+  {
+   "op": "water",
+   "points": [
+    [
+     15,
+     31
+    ],
+    [
+     17,
+     22
+    ],
+    [
+     14,
+     14
+    ],
+    [
+     19,
+     7
+    ],
+    [
+     24,
+     0
+    ]
+   ],
+   "width": [
+    3,
+    5
+   ]
+  },
+  {
+   "op": "boulder",
+   "at": [
+    [
+     4,
+     4,
+     4
+    ],
+    [
+     27,
+     11,
+     4
+    ],
+    [
+     10,
+     9,
+     2
+    ],
+    [
+     29,
+     3,
+     2
+    ],
+    [
+     21,
+     18,
+     2
+    ]
+   ]
+  },
+  {
+   "op": "tree",
+   "kind": "oak",
+   "size": "fat",
+   "at": [
+    25,
+    21
+   ]
+  },
+  {
+   "op": "tree",
+   "kind": "birch",
+   "at": [
+    30,
+    15
+   ],
+   "leaf": "bright green"
+  },
+  {
+   "op": "scatter",
+   "area": {
+    "rect": [
+     0,
+     0,
+     32,
+     32
+    ]
+   },
+   "kinds": [
+    "bush",
+    "leafy",
+    "tuft",
+    "tuft",
+    "flower",
+    "reeds",
+    "fern"
+   ],
+   "density": 0.07
+  }
+ ]
+}

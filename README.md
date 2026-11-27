@@ -13,15 +13,16 @@ real studs, checks the result against the parts' real shapes and connection poin
 what it can, and hands back a BrickLink Studio file, renders, a part list and step-by-step
 instructions.
 
-<p align="center"><img src="docs/img/example_views.png" alt="A forest clearing build from the four standard views: a terraced hill, a rock outcrop, a cobbled path, boulders, an oak tree and plants" width="860"></p>
-<p align="center"><sub>The <a href="examples/forest-clearing.json">example plan</a> (six operations) as built by BrickScape:
-806 parts, every one connected, no intersections.</sub></p>
+<p align="center"><img src="docs/img/showcase.png" alt="A BrickScape build: a tall grey rock cliff, a stream running past it, a terraced bank with a big oak, a birch, boulders and plants on a green baseplate" width="860"></p>
+<p align="center"><sub>Built by BrickScape from a <a href="examples/showcase.json">seven-operation plan</a>:
+1,514 parts, every one held by a real connection, no two parts intersecting.</sub></p>
 
 ## Contents
 - [How it works](#how-it-works)
 - [Install](#install)
 - [Tools](#tools)
 - [Brick companies](#brick-companies)
+- [Using references](#using-references)
 - [Build plans](#build-plans)
 - [What "buildable" means here](#what-buildable-means-here)
 - [Benchmark](#benchmark)
@@ -93,6 +94,8 @@ claude mcp add brickscape -- brickscape-mcp          # Claude Code
 | `part_info` | A part's size, its connection points (studs, anti-studs, bars, clips, hinges) and real colours. |
 | `build` | Compile a plan, repair it, validate it, save it. Returns the validation report. |
 | `render` | The four standard views (front-left, front-right, back-right, back-left) as one image. |
+| `compare` | The build rendered from a reference photo's viewpoint, side by side with the photo. |
+| `study_reference` | Analyse a reference build (.io / .ldr): size, density, hollowness, SNOT share, colours, most used parts. |
 | `parts_list` | `parts.csv` and `bricklink.xml` (a BrickLink wanted list); prices in GoBricks mode. |
 | `export` | A BrickLink Studio `.io` file. |
 | `instructions` | Step-by-step building instructions as a PDF (plus an `.ldr` with `STEP`s for Studio). |
@@ -121,6 +124,20 @@ What changes with the source:
 Adding another company (Mould King, Cada, BrickLink stock, your own collection) is one small
 class in `src/brickscape/catalog/` with four methods: `resolve(part)`, `colours(part)`,
 `price(part)` and `substitute(part)`.
+
+## Using references
+
+You can give the builder reference pictures or reference builds, and it uses them to get much
+closer to what you want. Hand your AI client a photo or a Studio `.io` / `.ldr` along with the brief:
+
+- **Photos:** the client reads the layout from the picture (where the rock, water and trees are,
+  roughly how big in studs), plans it, then uses `compare` to look at its build from the photo's
+  viewpoint next to the photo and fix the biggest differences.
+- **Builds:** `study_reference` measures the reference (footprint, height, parts per stud, how
+  hollow it is, colours, the parts it relies on) so the client can match its proportions,
+  palette and techniques instead of guessing.
+
+The benchmark includes a reference prompt for exactly this ([below](#benchmark)).
 
 ## Build plans
 
@@ -188,8 +205,8 @@ pass the strict check on their own (`pytest`).
 Does an AI design better LEGO with BrickScape than without it? The benchmark answers this
 with blind, position-swapped judging.
 
-**Prompts** ([bench/prompts.json](bench/prompts.json)): three broad briefs and three with
-constraints.
+**Prompts** ([bench/prompts.json](bench/prompts.json)): three broad briefs, three with
+constraints, and one recreation from a reference photo.
 
 | id | kind | brief |
 |---|---|---|
@@ -199,6 +216,11 @@ constraints.
 | garden-20 | constrained | On a 20 x 20 flat space: a garden with a pond, flower beds and a path; at most 400 parts. |
 | cliff-grey-green | constrained | On 32 x 16: a cliff along the back at least 4 bricks tall; only grey and green parts. |
 | big-tree-16 | constrained | On 16 x 16: one large tree with roots and undergrowth; fewer than 250 parts. |
+| waterfall-ref | reference | Recreate the diorama in a photo: a rock cliff with a waterfall, a stream, a large tree. |
+
+The reference photo is ["Waterfall" by Fuchs (MOC-59853)](https://rebrickable.com/mocs/MOC-59853/fuchs/waterfall/)
+on Rebrickable, used with credit as the target for the recreation prompt. Both builders get the
+same photo, and the accuracy judges compare each build against it.
 
 **Method** ([bench/run.py](bench/run.py)):
 1. For each prompt, two fresh headless Claude Code sessions get the same brief and the same
@@ -262,6 +284,7 @@ brickscape check some_model.io           # validate any model
 - [LDCad shadow library](https://github.com/RolandMelkert/LDCadShadowLibrary) by Roland Melkert
   (CC BY-SA 4.0): connection data, downloaded at setup.
 - [Rebrickable](https://rebrickable.com/downloads/): part, colour and element tables, downloaded at setup.
+- Benchmark reference photo: ["Waterfall" by Fuchs](https://rebrickable.com/mocs/MOC-59853/fuchs/waterfall/) (MOC-59853).
 
 MIT licensed. LEGO is a trademark of the LEGO Group, which does not sponsor or endorse this
 project.
