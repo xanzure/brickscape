@@ -12,11 +12,19 @@ from mcp.server.mcpserver import Image, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
 from brickscape import __version__
-from typing import Union
+from typing import Annotated, Literal, Union
+from pydantic import Field
+from mcp.types import ToolAnnotations
 from brickscape.plan import PlanError, compile_plan, op_reference
 from brickscape.schema import Plan
 
 mcp = MCPServer("brickscape", version=__version__)
+
+Source = Annotated[Literal["lego", "gobricks"], Field(description="Part source: 'lego' (official LEGO parts and colours, default) or 'gobricks' (GoBricks moulds, colours and prices)")]
+Name = Annotated[str, Field(description="The build's name, as given in its plan (see build)")]
+RO = ToolAnnotations(read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False)
+WRITES = ToolAnnotations(read_only_hint=False, destructive_hint=False, idempotent_hint=True, open_world_hint=False)
+
 OUT = os.path.abspath(os.path.expanduser(os.environ.get("BRICKSCAPE_OUT", "brickscape-out")))
 
 
@@ -108,7 +116,7 @@ EXAMPLE = {
     ]}
 
 
-@mcp.tool()
+@mcp.tool(title="Planning guide", annotations=RO)
 @_tool
 def guide() -> str:
     """How to plan a BrickScape build: workflow, coordinates, every operation, style tips and
@@ -116,9 +124,11 @@ def guide() -> str:
     return GUIDE.format(ops=op_reference(), example=json.dumps(EXAMPLE, indent=1))
 
 
-@mcp.tool()
+@mcp.tool(title="Search parts", annotations=RO)
 @_tool
-def search_parts(query: str, source: str = "lego", limit: int = 25) -> str:
+def search_parts(query: Annotated[str, Field(description="Words that must all appear in the part description, e.g. 'slope 45 2 x 1' or 'plant leaves'")],
+                 source: Source = "lego",
+                 limit: Annotated[int, Field(ge=1, le=200, description="Maximum number of parts to list")] = 25) -> str:
     """Find LDraw parts whose description matches all words of `query` (e.g. "slope 45 2 x 1",
     "plant leaves"), with whether the part source has them and in how many colours."""
     from brickscape.catalog import get
@@ -146,9 +156,10 @@ def search_parts(query: str, source: str = "lego", limit: int = 25) -> str:
     return "\n".join(lines)
 
 
-@mcp.tool()
+@mcp.tool(title="Part details", annotations=RO)
 @_tool
-def part_info(part: str, source: str = "lego") -> str:
+def part_info(part: Annotated[str, Field(description="LDraw part number, e.g. '3001' or '32607'")],
+              source: Source = "lego") -> str:
     """Size and connection points of one part (studs, anti-studs, bars, clips, hinges, pins)
     and the colours it exists in at the part source."""
     from brickscape.core.brick import info
@@ -208,9 +219,10 @@ def _report(r, removed, recol):
     return "\n".join(lines)
 
 
-@mcp.tool()
+@mcp.tool(title="Build a plan", annotations=WRITES)
 @_tool
-def build(plan: Union[Plan, str], source: str = "lego") -> str:
+def build(plan: Annotated[Union[Plan, str], Field(description="The build plan: board size, seed and a list of operations (hill, block, water, path, boulder, tree, plant, scatter, brick, ldraw). An object or a JSON string.")],
+          source: Source = "lego") -> str:
     """Compile a build plan (see guide; the schema lists every operation and field) into a
     model, repair it, check it strictly, and save it as <name>/model.ldr. Returns the report."""
     from brickscape.validate import validate, repair
@@ -233,9 +245,10 @@ def build(plan: Union[Plan, str], source: str = "lego") -> str:
               " looks right for the brief (a valid build is not yet a good one).")
 
 
-@mcp.tool()
+@mcp.tool(title="Render 4 views", annotations=WRITES)
 @_tool
-def render(name: str, resolution: int = 640) -> Image:
+def render(name: Name,
+           resolution: Annotated[int, Field(ge=160, le=2000, description="Pixel size of each of the 4 views")] = 640) -> Image:
     """Render a saved build from the 4 standard views (front-left, front-right, back-right,
     back-left, 30 degrees up) as one 2x2 image. Look at every view before delivering."""
     from brickscape.review.views import standard_views
@@ -244,9 +257,9 @@ def render(name: str, resolution: int = 640) -> Image:
     return Image(data=Path(out["sheet"]).read_bytes(), format="png")
 
 
-@mcp.tool()
+@mcp.tool(title="Parts list", annotations=WRITES)
 @_tool
-def parts_list(name: str, source: str = "lego") -> str:
+def parts_list(name: Name, source: Source = "lego") -> str:
     """Write the part list of a saved build: parts.csv and a BrickLink wanted list
     (bricklink.xml). Returns a summary."""
     from brickscape.io.export import parts_list as pl
@@ -261,9 +274,9 @@ def parts_list(name: str, source: str = "lego") -> str:
     return "\n".join(lines)
 
 
-@mcp.tool()
+@mcp.tool(title="Export Studio .io", annotations=WRITES)
 @_tool
-def export(name: str) -> str:
+def export(name: Name) -> str:
     """Export a saved build as a BrickLink Studio .io file (with a thumbnail if rendered)."""
     from brickscape.io.export import write_io
     d = _dir(name)
@@ -273,9 +286,10 @@ def export(name: str) -> str:
     return f"Studio file: {out}\nLDraw file: {os.path.join(d, 'model.ldr')}"
 
 
-@mcp.tool()
+@mcp.tool(title="Building instructions (PDF)", annotations=WRITES)
 @_tool
-def instructions(name: str, parts_per_step: int = 10) -> str:
+def instructions(name: Name,
+                 parts_per_step: Annotated[int, Field(ge=1, le=60, description="Most parts added in one instruction step")] = 10) -> str:
     """Make step-by-step building instructions (PDF) for a saved build. Slow for big builds
     (one render per step)."""
     from brickscape.core.brick import from_ldr
@@ -298,9 +312,12 @@ def _ldr_of(path):
     return p
 
 
-@mcp.tool()
+@mcp.tool(title="Compare with a photo", annotations=WRITES)
 @_tool
-def compare(name: str, reference: str, azimuth: float = 225, elevation: float = 30) -> Image:
+def compare(name: Name,
+            reference: Annotated[str, Field(description="Path to the reference photo (PNG, JPG or WebP)")],
+            azimuth: Annotated[float, Field(description="Camera direction in degrees: 270 front, 225 front-left, 180 left, 315 front-right")] = 225,
+            elevation: Annotated[float, Field(ge=0, le=90, description="Camera height in degrees above the baseplate")] = 30) -> Image:
     """Put a saved build next to a reference photo: renders the build from the given camera
     (renderer azimuth: 270 front, 225 front-left, 180 left; elevation in degrees) and returns
     both side by side. Match the photo's viewpoint, then compare shapes, proportions, colours."""
@@ -312,9 +329,9 @@ def compare(name: str, reference: str, azimuth: float = 225, elevation: float = 
     return Image(data=Path(out).read_bytes(), format="png")
 
 
-@mcp.tool()
+@mcp.tool(title="Study a reference build", annotations=RO)
 @_tool
-def study_reference(path: str) -> str:
+def study_reference(path: Annotated[str, Field(description="Path to a reference model: .ldr, .mpd or BrickLink Studio .io")]) -> str:
     """Analyse a reference build (.ldr / .mpd / Studio .io) to learn from it: footprint and
     height, part count and density, how hollow it is, share of sideways (SNOT) and angled parts,
     part categories, main colours, and its 30 most used parts."""
@@ -339,9 +356,10 @@ def study_reference(path: str) -> str:
     ])
 
 
-@mcp.tool()
+@mcp.tool(title="Check any model", annotations=RO)
 @_tool
-def check(path: str, source: str = "lego") -> str:
+def check(path: Annotated[str, Field(description="Path to a model to validate: .ldr, .mpd or BrickLink Studio .io")],
+          source: Source = "lego") -> str:
     """Strictly validate any .ldr / .mpd / Studio .io file."""
     from brickscape.core.brick import from_ldr
     from brickscape.validate import validate
