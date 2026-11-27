@@ -215,6 +215,14 @@ def repair(b, max_rounds=5):
                 if decorative(b.pieces[k].part) or deg[k] <= 1 or _removable(k, edges, reach, b.roots):
                     bad.add(k)
                     break
+            else:                              # last resort: the later part and what hangs from it,
+                k = max(i, j)                  # if that is only a few parts
+                if k not in b.roots:
+                    sub = {e: t for e, t in edges.items() if k not in e}
+                    r2 = components(len(b.pieces), sub, b.roots)
+                    lost = [m for m in reach if m not in r2 and m != k]
+                    if len(lost) <= 3:
+                        bad |= {k, *lost}
         bad = {i for i in bad if i not in b.roots}
         if not bad:
             break

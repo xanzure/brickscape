@@ -1,0 +1,186 @@
+{
+ "summary": {
+  "prompts": 6,
+  "wins": 3,
+  "ties": 0,
+  "losses": 3,
+  "win_rate": 50,
+  "win_or_tie_rate": 50,
+  "valid_rate": {
+   "mcp": 0,
+   "base": 0
+  },
+  "looks_only": {
+   "wins": 3,
+   "ties": 0,
+   "win_rate": 50,
+   "win_or_tie_rate": 50
+  },
+  "cost_usd": {
+   "mcp": 1.25,
+   "base": 3.18
+  },
+  "minutes": {
+   "mcp": 14.5,
+   "base": 47.2
+  }
+ },
+ "rows": [
+  {
+   "id": "big-tree-16",
+   "kind": "constrained",
+   "outcome": "loss",
+   "outcome_looks": "loss",
+   "reasons": [
+    "neither build rendered",
+    "neither build rendered"
+   ],
+   "mcp": {
+    "valid": false,
+    "pieces": 0,
+    "collisions": null,
+    "loose": null,
+    "minutes": 0.0,
+    "cost": 0
+   },
+   "base": {
+    "valid": false,
+    "pieces": 0,
+    "collisions": null,
+    "loose": null,
+    "minutes": 0.0,
+    "cost": 0
+   }
+  },
+  {
+   "id": "cliff-grey-green",
+   "kind": "constrained",
+   "outcome": "loss",
+   "outcome_looks": "loss",
+   "reasons": [
+    "neither build rendered",
+    "neither build rendered"
+   ],
+   "mcp": {
+    "valid": false,
+    "pieces": 0,
+    "collisions": null,
+    "loose": null,
+    "minutes": 0.0,
+    "cost": 0
+   },
+   "base": {
+    "valid": false,
+    "pieces": 0,
+    "collisions": null,
+    "loose": null,
+    "minutes": 0.0,
+    "cost": 0
+   }
+  },
+  {
+   "id": "forest-stream",
+   "kind": "broad",
+   "outcome": "win",
+   "outcome_looks": "win",
+   "reasons": [
+    "only one build rendered",
+    "only one build rendered"
+   ],
+   "mcp": {
+    "valid": false,
+    "pieces": 773,
+    "collisions": 3,
+    "loose": 0,
+    "minutes": 4.1,
+    "cost": 0.35342879999999993
+   },
+   "base": {
+    "valid": false,
+    "pieces": 0,
+    "collisions": null,
+    "loose": null,
+    "minutes": 20.1,
+    "cost": 0.43995389999999995
+   }
+  },
+  {
+   "id": "garden-20",
+   "kind": "constrained",
+   "outcome": "loss",
+   "outcome_looks": "loss",
+   "reasons": [
+    "neither build rendered",
+    "neither build rendered"
+   ],
+   "mcp": {
+    "valid": false,
+    "pieces": 0,
+    "collisions": null,
+    "loose": null,
+    "minutes": 0.0,
+    "cost": 0
+   },
+   "base": {
+    "valid": false,
+    "pieces": 0,
+    "collisions": null,
+    "loose": null,
+    "minutes": 0.0,
+    "cost": 0
+   }
+  },
+  {
+   "id": "lakeside",
+   "kind": "broad",
+   "outcome": "win",
+   "outcome_looks": "win",
+   "reasons": [
+    "only one build rendered",
+    "only one build rendered"
+   ],
+   "mcp": {
+    "valid": false,
+    "pieces": 1054,
+    "collisions": 1,
+    "loose": 0,
+    "minutes": 5.6,
+    "cost": 0.48592199999999997
+   },
+   "base": {
+    "valid": false,
+    "pieces": 0,
+    "collisions": null,
+    "loose": null,
+    "minutes": 11.1,
+    "cost": 1.3131972
+   }
+  },
+  {
+   "id": "mountain-pass",
+   "kind": "broad",
+   "outcome": "win",
+   "outcome_looks": "win",
+   "reasons": [
+    "only one build rendered",
+    "only one build rendered"
+   ],
+   "mcp": {
+    "valid": false,
+    "pieces": 2494,
+    "collisions": 6,
+    "loose": 0,
+    "minutes": 4.8,
+    "cost": 0.41110710000000006
+   },
+   "base": {
+    "valid": false,
+    "pieces": 0,
+    "collisions": null,
+    "loose": null,
+    "minutes": 16.0,
+    "cost": 1.4263161
+   }
+  }
+ ]
+}

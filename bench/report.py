@@ -43,59 +43,69 @@ def _stack_svg(title, parts, w=560):
     return "\n".join(out)
 
 
+def efficiency(m, b):
+    """win if brickscape is cheaper AND faster, loss if worse on both, tie otherwise."""
+    if not b.get("ok"):
+        return "win" if m.get("ok") else "void"
+    if not m.get("ok"):
+        return "loss"
+    cheaper, faster = (m["cost"] or 0) < (b["cost"] or 0), m["minutes"] < b["minutes"]
+    return "win" if cheaper and faster else "loss" if not cheaper and not faster else "tie"
+
+
+CATS = ("efficiency", "accuracy", "looks")
+
+
 def report(run_dir, docs=None):
     prompts = {p["id"]: p for p in json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompts.json")))}
     rows = []
     for pid in sorted(os.listdir(run_dir)):
         d = os.path.join(run_dir, pid)
-        if not os.path.exists(os.path.join(d, "judge.json")):
+        if not os.path.exists(os.path.join(d, "judge_accuracy.json")):
             continue
-        j = json.load(open(os.path.join(d, "judge.json")))
-        jl = os.path.join(d, "judge_looks.json")
-        row = {"id": pid, "kind": prompts.get(pid, {}).get("kind", "?"), "outcome": j["outcome"],
-               "outcome_looks": json.load(open(jl))["outcome"] if os.path.exists(jl) else None,
-               "reasons": [r.get("reason", "") for r in j["rounds"]]}
+        row = {"id": pid, "kind": prompts.get(pid, {}).get("kind", "?"), "reasons": {}}
         for c in ("mcp", "base"):
             ck = json.load(open(os.path.join(d, c, "check.json")))
-            s = json.load(open(os.path.join(d, c, "session.json")))
-            row[c] = {"valid": bool(ck.get("valid")), "pieces": ck.get("pieces", 0),
-                      "collisions": ck.get("collisions"), "loose": ck.get("loose"),
-                      "minutes": round(s.get("wall_s", 0) / 60, 1), "cost": s.get("total_cost_usd")}
+            ss = json.load(open(os.path.join(d, c, "session.json")))
+            row[c] = {"ok": bool(ck.get("sheet")), "valid": bool(ck.get("valid")), "pieces": ck.get("pieces", 0),
+                      "minutes": round(ss.get("wall_s", 0) / 60, 1), "cost": ss.get("total_cost_usd")}
+        row["efficiency"] = efficiency(row["mcp"], row["base"])
+        for m in ("accuracy", "looks"):
+            j = json.load(open(os.path.join(d, f"judge_{m}.json")))
+            row[m] = j["outcome"]
+            row["reasons"][m] = [r.get("reason", "") for r in j["rounds"]]
         rows.append(row)
+    summ = {"prompts": len(rows), "categories": {}}
+    for cat in CATS:
+        scored = [r[cat] for r in rows if r[cat] != "void"]
+        n = len(scored) or 1
+        w, t = scored.count("win"), scored.count("tie")
+        summ["categories"][cat] = {"wins": w, "ties": t, "losses": len(scored) - w - t, "scored": len(scored),
+                                   "win_rate": round(100 * w / n), "win_or_tie_rate": round(100 * (w + t) / n)}
     n = len(rows) or 1
-    wins = sum(r["outcome"] == "win" for r in rows)
-    ties = sum(r["outcome"] == "tie" for r in rows)
-    losses = len(rows) - wins - ties
-    valid = {c: sum(r[c]["valid"] for r in rows) for c in ("mcp", "base")}
-    lw = sum(r["outcome_looks"] == "win" for r in rows)
-    lt = sum(r["outcome_looks"] == "tie" for r in rows)
-    summ = {"prompts": len(rows), "wins": wins, "ties": ties, "losses": losses,
-            "win_rate": round(100 * wins / n), "win_or_tie_rate": round(100 * (wins + ties) / n),
-            "valid_rate": {c: round(100 * valid[c] / n) for c in valid},
-            "looks_only": {"wins": lw, "ties": lt, "win_rate": round(100 * lw / n),
-                           "win_or_tie_rate": round(100 * (lw + lt) / n)},
-            "cost_usd": {c: round(sum(r[c]["cost"] or 0 for r in rows), 2) for c in ("mcp", "base")},
-            "minutes": {c: round(sum(r[c]["minutes"] for r in rows), 1) for c in ("mcp", "base")}}
+    summ["valid_rate"] = {c: round(100 * sum(r[c]["valid"] for r in rows) / n) for c in ("mcp", "base")}
+    summ["cost_usd"] = {c: round(sum(r[c]["cost"] or 0 for r in rows), 2) for c in ("mcp", "base")}
+    summ["minutes"] = {c: round(sum(r[c]["minutes"] for r in rows), 1) for c in ("mcp", "base")}
     json.dump({"summary": summ, "rows": rows}, open(os.path.join(run_dir, "results.json"), "w"), indent=1)
     docs = docs or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "bench")
     os.makedirs(docs, exist_ok=True)
-    open(os.path.join(docs, "outcomes.svg"), "w").write(_stack_svg(
-        "brickscape vs plain Claude: judged outcomes",
-        [("win", wins, COL["win"]), ("tie", ties, COL["tie"]), ("loss", losses, COL["loss"])]))
-    open(os.path.join(docs, "outcomes_looks.svg"), "w").write(_stack_svg(
-        "Judged on the renders alone (no checker report)",
-        [("win", lw, COL["win"]), ("tie", lt, COL["tie"]), ("loss", len(rows) - lw - lt, COL["loss"])]))
+    for cat in CATS:
+        k = summ["categories"][cat]
+        open(os.path.join(docs, f"{cat}.svg"), "w").write(_stack_svg(
+            f"{cat.title()}: brickscape vs plain Claude",
+            [("win", k["wins"], COL["win"]), ("tie", k["ties"], COL["tie"]), ("loss", k["losses"], COL["loss"])]))
     open(os.path.join(docs, "validity.svg"), "w").write(_bar_svg(
         "Builds that pass the strict checker", [("valid builds", [("with brickscape", summ["valid_rate"]["mcp"], COL["mcp"]),
                                                                  ("plain Claude", summ["valid_rate"]["base"], COL["base"])])], 100, "%"))
-    open(os.path.join(docs, "per_prompt.svg"), "w").write(_bar_svg(
-        "Parts per build", [(r["id"], [("brickscape", r["mcp"]["pieces"], COL["mcp"]), ("plain", r["base"]["pieces"], COL["base"])])
-                            for r in rows], max([max(r["mcp"]["pieces"], r["base"]["pieces"]) for r in rows] + [1])))
-    md = ["| prompt | kind | outcome | looks only | brickscape: parts / valid | plain: parts / valid |",
-          "|---|---|---|---|---|---|"]
+    mx = max([max(r["mcp"]["minutes"], r["base"]["minutes"]) for r in rows] + [1])
+    open(os.path.join(docs, "minutes.svg"), "w").write(_bar_svg(
+        "Minutes per build", [(r["id"], [("brickscape", r["mcp"]["minutes"], COL["mcp"]), ("plain", r["base"]["minutes"], COL["base"])])
+                              for r in rows], mx))
+    md = ["| prompt | kind | efficiency | accuracy | looks | brickscape: parts, valid, min, $ | plain: parts, valid, min, $ |",
+          "|---|---|---|---|---|---|---|"]
+    f = lambda c: f"{c['pieces']}, {'yes' if c['valid'] else 'no'}, {c['minutes']}, {c['cost'] or 0:.2f}"
     for r in rows:
-        md.append(f"| {r['id']} | {r['kind']} | **{r['outcome']}** | {r['outcome_looks'] or '-'} | {r['mcp']['pieces']} / {'yes' if r['mcp']['valid'] else 'no'} "
-                  f"| {r['base']['pieces']} / {'yes' if r['base']['valid'] else 'no'} |")
+        md.append(f"| {r['id']} | {r['kind']} | {r['efficiency']} | {r['accuracy']} | {r['looks']} | {f(r['mcp'])} | {f(r['base'])} |")
     open(os.path.join(docs, "table.md"), "w").write("\n".join(md) + "\n")
     return json.dumps(summ, indent=1) + "\n" + "\n".join(md)
 

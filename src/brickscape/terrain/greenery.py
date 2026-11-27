@@ -128,7 +128,12 @@ def seat(b, part, colour, F, turns=None):
             i = len(b.pieces) - 1
             held = any(joined(p, b.pieces[j]) for j in b.near(i))
             if held and (not FIT or fits(b, i)):
-                return p
+                b.pop()                                # back off 1 LDU from the deepest fit:
+                q = b.raw(part, colour, M(R, T(0, dy - 1, 0)))     # rounding in the saved file
+                if any(joined(q, b.pieces[j]) for j in b.near(len(b.pieces) - 1)):
+                    return q                           # must not tip it into a clash
+                b.pop()
+                return b.raw(part, colour, M(R, T(0, dy, 0)))
             b.pop()
     return None
 

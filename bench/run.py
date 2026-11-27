@@ -9,9 +9,12 @@ For every prompt (bench/prompts.json):
      leave ./model.ldr.
   2. render + check: both models go through the same renderer (the 4 standard views, same
      camera angles) and the same strict checker.
-  3. judge: two fresh Claude sessions, each sees the brief, the two render sheets as A and B
-     and both checker summaries, and picks a winner. Round 2 swaps which build is A, so the
-     position can't decide it. MCP wins both rounds = win, one each = tie, none = loss.
+  3. score three categories, each win / tie / loss for brickscape:
+     - efficiency (measured): cost and wall time; better on both = win, worse on both = loss.
+     - accuracy (judged): brief + measured facts (size, parts, colours, checker results).
+     - looks (judged): the render sheets only.
+     Each judged category uses two fresh Claude sessions with A/B swapped, so position can't
+     decide it: brickscape wins both rounds = win, one each = tie, none = loss.
 Results go to bench/results/<run>/results.json; `report` draws the charts in docs/.
 """
 import argparse, concurrent.futures as cf, datetime, glob, json, os, shutil, subprocess, sys, time
@@ -34,18 +37,30 @@ final, copy its model.ldr (the path the build tool reports) to ./model.ldr."""
 BASE_NOTE = """The LDraw parts library is at {ldraw} (part files describe each part's geometry).
 You can write and run Python or any other tool you like to produce the file."""
 
-JUDGE = """You are judging two LEGO designs made for the same brief. Be strict and fair.
+JUDGE = {
+"accuracy": """You are judging two LEGO designs made for the same brief, on ACCURACY only: how
+closely each one delivers what the brief asks for and how well it keeps the brief's limits
+(board size, part count, colours, required features), and whether it can really be built.
+Ignore how pretty it is; another judge scores looks.
 
 Brief: {prompt}
 
 A.png and B.png each show one design from the same 4 standard camera angles (front-left,
-front-right, back-right, back-left).{checker}
+front-right, back-right, back-left). Measured facts:
+- A: {va}
+- B: {vb}
 
-Decide which design is the better answer to the brief, as a real LEGO build someone would want
-to build and display: how good and natural it looks (not blocky, good detail and colour), how
-well it follows the brief and its constraints, and whether it can really be built.
-Look at both images (use the Read tool on A.png and B.png). Then answer with ONLY a JSON object:
-{{"winner": "A" or "B", "reason": "one sentence"}}"""
+Use the Read tool on A.png and B.png. Then answer with ONLY a JSON object:
+{{"winner": "A" or "B", "reason": "one sentence"}}""",
+"looks": """You are judging two LEGO designs on LOOKS only: which one looks better as a
+LEGO display model (natural and organic rather than blocky, good detail, colour and
+composition). Ignore whether it follows any brief or can be built; other judges score that.
+
+A.png and B.png each show one design from the same 4 standard camera angles.
+Use the Read tool on A.png and B.png. Then answer with ONLY a JSON object:
+{{"winner": "A" or "B", "reason": "one sentence"}}""",
+}
+MODES = ("accuracy", "looks")
 
 
 def claude(prompt, cwd, tools, mcp_config=None, timeout=3600, model=None):
@@ -115,6 +130,13 @@ def check_render(run_dir, pr, cond):
                        bad_parts=len(c["parts"]) + sum(v["source"]["missing"].values()),
                        bad_colours=sum(v["source"]["bad_colour"].values()))
             res["valid"] = not (res["collisions"] or res["loose"] or res["bad_parts"])
+            from brickscape.plan import colours as _cn
+            names = {v: k for k, v in _cn().items()}
+            body = [p for i, p in enumerate(b.pieces) if i not in b.roots] or b.pieces
+            res["size_studs"] = [round((max(p.hi[0] for p in b.pieces) - min(p.lo[0] for p in b.pieces)) / 20),
+                                 round((max(p.hi[2] for p in b.pieces) - min(p.lo[2] for p in b.pieces)) / 20)]
+            res["height_bricks"] = round(-min(p.lo[1] for p in body) / 24, 1)
+            res["colours"] = sorted({names.get(p.color, str(p.color)) for p in body})
         except Exception as e:                                       # unreadable model
             res["error"] = f"{type(e).__name__}: {e}"
         try:
@@ -130,25 +152,22 @@ def summary(c):
         return "no model file was produced"
     if "error" in c:
         return f"model could not be read ({c['error'][:100]})"
-    return (f"{c['pieces']} parts; {c['collisions']} intersecting part pairs; {c['loose']} parts not connected; "
-            f"{c['bad_parts']} unknown/unavailable parts; {c['bad_colours']} parts in colours LEGO doesn't make")
+    return (f"{c['pieces']} parts on a {c.get('size_studs', ['?', '?'])[0]} x {c.get('size_studs', ['?', '?'])[1]} stud area, "
+            f"{c.get('height_bricks', '?')} bricks tall; colours: {', '.join(c.get('colours', []))}; "
+            f"checker: {c['collisions']} intersecting part pairs, {c['loose']} parts not connected, "
+            f"{c['bad_parts']} unknown/unavailable parts, {c['bad_colours']} parts in colours LEGO doesn't make")
 
 
-CHECKER = """ An automated checker reported:
-- A: {va}
-- B: {vb}"""
-
-
-def judge(run_dir, pr, mode="full"):
-    """mode "full": judges also see the checker summaries; "looks": images and brief only."""
+def judge(run_dir, pr, mode="accuracy"):
+    """Two fresh judge sessions (A/B swapped) for one category: accuracy or looks."""
     d = os.path.join(run_dir, pr["id"])
-    out = os.path.join(d, "judge.json" if mode == "full" else f"judge_{mode}.json")
+    out = os.path.join(d, f"judge_{mode}.json")
     if os.path.exists(out):
         return json.load(open(out))
     cm, cb = (json.load(open(os.path.join(d, c, "check.json"))) for c in ("mcp", "base"))
     rounds = []
     for k, order in enumerate((("mcp", "base"), ("base", "mcp"))):
-        jd = os.path.join(d, f"judge{k + 1}" + ("" if mode == "full" else "_" + mode))
+        jd = os.path.join(d, f"judge_{mode}{k + 1}")
         os.makedirs(jd, exist_ok=True)
         ca, cbb = (cm if o == "mcp" else cb for o in order)
         if not ca.get("sheet") and not cbb.get("sheet"):
@@ -160,8 +179,7 @@ def judge(run_dir, pr, mode="full"):
             continue
         shutil.copy(ca["sheet"], os.path.join(jd, "A.png"))
         shutil.copy(cbb["sheet"], os.path.join(jd, "B.png"))
-        chk = CHECKER.format(va=summary(ca), vb=summary(cbb)) if mode == "full" else ""
-        r = claude(JUDGE.format(prompt=pr["prompt"], checker=chk), jd, ["Read"], timeout=900)
+        r = claude(JUDGE[mode].format(prompt=pr["prompt"], va=summary(ca), vb=summary(cbb)), jd, ["Read"], timeout=900)
         txt = r.get("result", "")
         try:
             v = json.loads(txt[txt.index("{"):txt.rindex("}") + 1])
@@ -200,7 +218,7 @@ def main():
                 print(p["id"], c, summary(check_render(run_dir, p, c)), flush=True)
     if a.stage in ("judge", "all"):
         for p in prompts:
-            print(p["id"], "full:", judge(run_dir, p)["outcome"], "looks-only:", judge(run_dir, p, "looks")["outcome"], flush=True)
+            print(p["id"], *(f"{m}: {judge(run_dir, p, m)['outcome']}" for m in MODES), flush=True)
     if a.stage in ("report", "all"):
         from report import report
         print(report(run_dir))
