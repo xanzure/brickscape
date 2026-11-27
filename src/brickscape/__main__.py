@@ -38,11 +38,31 @@ def ldraw_library(force=False):
     return LDRAW
 
 
+def _blender_config():
+    """ldraw-mcp installs the ImportLDraw add-on into ~/.config/blender/<version>/scripts/addons,
+    which only exists once Blender has been opened. Create it if Blender is installed."""
+    import os, re, subprocess
+    try:
+        from ldraw_mcp.render import find_blender
+        b = find_blender()
+        if not b:
+            print("Blender not found: renders and instructions need Blender 4.x (or set LDRAW_MCP_BLENDER)")
+            return
+        out = subprocess.run([b, "--version"], capture_output=True, text=True, timeout=120).stdout
+        m = re.search(r"Blender (\d+)\.(\d+)", out)
+        if m:
+            d = os.path.expanduser(f"~/.config/blender/{m.group(1)}.{m.group(2)}/scripts/addons")
+            os.makedirs(d, exist_ok=True)
+    except Exception as e:                      # never fail setup over this
+        print("could not prepare Blender's add-on folder:", e)
+
+
 def setup():
     from brickscape.catalog import lego
     from brickscape.core import snaps
     import subprocess
     print("LDraw parts library ->", ldraw_library(), flush=True)
+    _blender_config()
     print("Blender add-on (ldraw-mcp-setup; skipped if Blender isn't installed) ...", flush=True)
     subprocess.run([sys.executable, "-m", "ldraw_mcp.setup_cli", "--skip-library"], check=False)
     print("official LEGO part data (Rebrickable) ->", lego.download(), flush=True)
