@@ -36,6 +36,7 @@ instructions.
 - [What "buildable" means here](#what-buildable-means-here)
 - [Benchmark](#benchmark)
 - [Command line](#command-line)
+- [Development](#development)
 - [Limitations](#limitations)
 - [Credits](#credits)
 
@@ -67,14 +68,23 @@ instructions.
 
 Requires Python 3.10+ and [Blender](https://www.blender.org) 4.x (for renders and instructions).
 
+One line (uses [uv](https://docs.astral.sh/uv/) if you have it, otherwise pip):
+
 ```bash
-pip install git+https://github.com/xanzure/brickscape
+curl -LsSf https://raw.githubusercontent.com/xanzure/brickscape/main/install.sh | sh
+```
+
+Or with pip:
+
+```bash
+pip install brickscape
 brickscape setup
 ```
 
-`brickscape setup` downloads the LDraw parts library and the ImportLDraw Blender add-on (through
-[ldraw-mcp](https://github.com/musharna/ldraw-mcp)), the LDCad connection data, and
-Rebrickable's part and colour tables into `~/.cache/brickscape`. None of these are bundled.
+`brickscape setup` downloads the LDraw parts library (to `~/.ldraw`), installs the ImportLDraw
+Blender add-on (through [ldraw-mcp](https://github.com/musharna/ldraw-mcp)), and fetches the
+LDCad connection data and Rebrickable's part and colour tables into `~/.cache/brickscape`. None
+of these are bundled. If Blender isn't on your PATH, set `LDRAW_MCP_BLENDER` to its binary.
 
 Add the server to your MCP client:
 
@@ -322,6 +332,16 @@ brickscape export forest-clearing        # Studio .io
 brickscape parts forest-clearing         # parts.csv + bricklink.xml
 brickscape instructions forest-clearing  # PDF
 brickscape check some_model.io           # validate any model
+```
+
+## Development
+
+```bash
+git clone https://github.com/xanzure/brickscape && cd brickscape
+pip install -e ".[test]" && brickscape setup
+pytest                                    # unit and generator tests
+tools/sandbox_test.sh pip                 # install from GitHub into a throwaway HOME and
+tools/sandbox_test.sh curl                # exercise every tool over MCP, like a new user
 ```
 
 ## Limitations
