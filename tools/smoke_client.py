@@ -56,6 +56,10 @@ async def main(server, render):
             ok("bad plan rejected with field name", bad.is_error and "size" in bad.content[0].text)
             pr = await s.get_prompt("design_scene", {"description": "a pond"})
             ok("prompt design_scene", "pond" in pr.messages[0].content.text)
+            pr = await s.get_prompt("design_scene", {"description": "a pond", "width": "", "depth": "20", "source": ""})
+            ok("prompt with empty form boxes", "32 x 20" in pr.messages[0].content.text)
+            for name, args in (("recreate_photo", {"photo_path": "ref.png", "width": ""}), ("check_model", {"path": "m.ldr", "source": ""})):
+                ok(f"prompt {name}", (await s.get_prompt(name, args)).messages)
             if render:
                 await call("render", {"name": "smoke tiny", "resolution": 240},
                            lambda res: res.content and res.content[0].type == "image")

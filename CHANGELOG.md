@@ -8,6 +8,9 @@
   `brickscape://schema/plan` resource and in `guide`; invalid plans still name the exact field.
 - `search_parts` is about 25x faster after the first call (part descriptions are indexed once).
 - `part_info` rounds sizes sensibly.
+- Prompts accept empty or text arguments (form-based clients send empty boxes as ""), which
+  made `design_scene` fail with an internal error.
+- The guide no longer says boards must be multiples of 16 studs (any size from 4 to 192 works).
 
 ## 0.1.2 (2026-11-27)
 

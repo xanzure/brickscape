@@ -139,7 +139,8 @@ If the user gives you a reference photo or build, use it: it makes a much better
   match its proportions and palette.
 
 ## Coordinates
-- Board: width x depth studs, multiples of 16 (32 = one baseplate). x = left to right,
+- Board: width x depth studs, 4 to 192 (multiples of 16 get baseplates, 32 = one; other sizes
+  a plate floor). x = left to right,
   z = front (z = 0, nearest the viewer) to back. Heights in plates (3 plates = 1 brick).
 - Later operations sit on top of earlier ones: the toolkit keeps a height map. Terrain ops
   claim their cells, so place terrain first, then paths and water, then trees and scatter.
@@ -552,11 +553,23 @@ def colour_list() -> str:
 
 
 # ----------------------------------------------------------------------------- prompts
+# Prompt arguments arrive as text, and form-based clients send empty boxes as "": every
+# argument is a string here, and empty or invalid values fall back to the default.
+def _int(v, default):
+    try:
+        return int(str(v).strip()) if str(v).strip() else default
+    except ValueError:
+        return default
+
+
+def _src(v):
+    return v.strip().lower() if isinstance(v, str) and v.strip().lower() in ("lego", "gobricks") else "lego"
+
 @mcp.prompt(name="design_scene", title="Design a LEGO scene",
             description="Design a buildable LEGO scene from a short description, then deliver the files.")
-def design_scene(description: str, width: int = 32, depth: int = 32, source: str = "lego") -> str:
+def design_scene(description: str, width: str = "32", depth: str = "32", source: str = "lego") -> str:
     return (f"Design a LEGO build with BrickScape: {description}\n"
-            f"Board: {width} x {depth} studs. Part source: {source}.\n"
+            f"Board: {_int(width, 32)} x {_int(depth, 32)} studs. Part source: {_src(source)}.\n"
             "Call `guide` first. Write a short brief (what goes where, palette, limits), then `build` a plan, "
             "`render` it and look at all four views, improve the plan and build again at least once. "
             "When it looks right, `export` the Studio .io and run `parts_list`. Report the file paths, "
@@ -565,8 +578,9 @@ def design_scene(description: str, width: int = 32, depth: int = 32, source: str
 
 @mcp.prompt(name="recreate_photo", title="Recreate a LEGO photo",
             description="Recreate a LEGO diorama from a reference photo as closely as possible.")
-def recreate_photo(photo_path: str, width: int = 32, depth: int = 32) -> str:
-    return (f"Recreate the LEGO build in the photo {photo_path} with BrickScape, on {width} x {depth} studs.\n"
+def recreate_photo(photo_path: str, width: str = "32", depth: str = "32") -> str:
+    return (f"Recreate the LEGO build in the photo {photo_path} with BrickScape, on "
+            f"{_int(width, 32)} x {_int(depth, 32)} studs.\n"
             "Look at the photo and note what goes where (rock, water, trees, paths), rough sizes in studs and "
             "the colours. Call `guide`, `build` a plan that matches that layout, then use `compare` with the photo "
             "from a camera that matches its viewpoint, fix the biggest differences and build again. Repeat until "
@@ -576,7 +590,7 @@ def recreate_photo(photo_path: str, width: int = 32, depth: int = 32) -> str:
 @mcp.prompt(name="check_model", title="Check a model is buildable",
             description="Check any LEGO model file for problems and explain how to fix them.")
 def check_model(path: str, source: str = "lego") -> str:
-    return (f"Use BrickScape's `check` on {path} (part source {source}). Explain each problem it finds "
+    return (f"Use BrickScape's `check` on {path} (part source {_src(source)}). Explain each problem it finds "
             "(intersecting parts, loose parts, unavailable parts, impossible colours) in plain words, "
             "say which parts are involved and how a builder could fix each one.")
 
