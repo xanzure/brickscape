@@ -155,7 +155,7 @@ class Compiler:
         """Board cells under the structural parts placed since `start`."""
         out = set()
         for p in self.b.pieces[start:]:
-            if p is None or G.decorative(p.part) or abs(p.M[4] - 1) > 1e-3:
+            if p is None or G.decorative(p.part) or abs(abs(p.M[7]) - 1) > 1e-3:   # M[7] = local y . world y: upright parts only
                 continue
             x0 = math.floor((p.lo[0] + self.W * 10) / 20 + 1e-6)
             x1 = math.ceil((p.hi[0] + self.W * 10) / 20 - 1e-6)
@@ -257,7 +257,9 @@ class Compiler:
         """Raised ground over an area. height: plates at the top (rounded to 4-plate terraces
         for 'terraces'); style: 'terraces' (grass treads, earth/stone risers) or 'rock' (a
         rock outcrop with leaning cliff faces and a grass top); falloff: studs from the edge
-        to full height (default about a third of the area's radius)."""
+        to full height (default about a third of the area's radius). For 'rock': lean = studs
+        the face steps back per brick of height (default 0.8; lower = steeper cliff, 0 =
+        vertical); accent_amount = share of the accent colour (default 0.06)."""
         cells = self.cells(op) - self.used
         if not cells:
             return
@@ -270,9 +272,11 @@ class Compiler:
             from brickscape.terrain.rock3 import Rock3
             H = {c: max(3, min(top, round(top * min(1.0, (d + 1 + 2 * (n(*c) - .5)) / fall))))
                  for c, d in dist.items()}
+            lean = float(op.get("lean", 0.8))
             r = Rock3(self.b, H, seed=rng.randrange(10 ** 6), colour=colour(op.get("colour"), 72),
-                      accent=colour(op.get("accent"), 71), board=self.board)
-            r.build(talus=0.3)
+                      accent=colour(op.get("accent"), 71), accent_amt=float(op.get("accent_amount", 0.06)),
+                      board=self.board, batter=lean if lean > 0 else None)
+            r.build(talus=0.3 if lean > 0 else 0.0)       # a vertical cliff drops straight to the ground
         else:
             from brickscape.terrain.ground import Terraces
             courses = max(1, round(top / 4))
@@ -330,6 +334,41 @@ class Compiler:
         bank, bsurf, wused = banks(self.b, rng, cells, self.board, avoid=self.used, seed=self.seed + 11)
         water_surface(self.b, rng, cells - set(wused), deep=colour(op.get("colour"), 1), seed=self.seed + 12)
         self.used |= cells | set(bank)
+
+    def op_waterfall(self, op):
+        """A waterfall: a column of transparent blue bricks from the ground up to `height`
+        plates, `width` studs wide (along x) and `depth` studs deep, standing at `at` [x, z]
+        (min corner) against a cliff, with streaks of a lighter blue and white foam where it
+        lands. Put it right in front of a `hill` with style 'rock', before the `water` it feeds."""
+        x0, z0 = (int(v) for v in op["at"])
+        w, d, H = int(op.get("width", 2)), int(op.get("depth", 1)), int(op.get("height", 24))
+        cells = {(x0 + i, z0 + j) for i in range(w) for j in range(d)} & self.board
+        if not cells:
+            raise PlanError("waterfall is outside the board")
+        if cells & self.used:
+            raise PlanError(f"waterfall cells {sorted(cells & self.used)[:4]} are already taken; "
+                            "put it in front of the rock, not inside it")
+        rng = self.rng_for(op)
+        deep, light = colour(op.get("colour"), 33), colour(op.get("streak_colour"), 43)
+        y0 = max(self.h(c) for c in cells)
+        y = y0
+        layer = 0
+        TRANS = {(1, 1): "3005", (1, 2): "3004"}   # the bricks LEGO makes in transparent blues
+        while y + 3 <= y0 + H:
+            for (x, z, ww, dd) in pack(cells, TRANS, rotate=layer % 2 == 1):
+                put_rect(self.b, TRANS, light if rng.random() < 0.3 else deep, x, z, ww, dd, y)
+            y += 3
+            layer += 1
+        TT = {(1, 1): "3070b", (1, 2): "3069b"}
+        for (x, z, ww, dd) in pack(cells, TT):             # smooth lip at the top
+            put_rect(self.b, TT, light, x, z, ww, dd, y)
+        self.used |= cells
+        # foam: round plates and tiles on the ground cells in front of the fall
+        front = {(x, z0 - 1) for x in range(x0 - 1, x0 + w + 1)} & self.board - self.used
+        for c in sorted(front):
+            if rng.random() < 0.7:
+                self.b.put(rng.choice(("98138", "6141", "3070b")), rng.choice((15, 15, 47)), c[0], self.h(c), c[1])
+        self.used |= front
 
     # ------------------------------------------------------------------ plants
     TREES = {"oak": "oak", "birch": "birch", "pine": "pine", "palm": "palm", "cypress": "cypress"}

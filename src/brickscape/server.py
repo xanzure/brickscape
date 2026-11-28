@@ -536,7 +536,7 @@ def plan_schema() -> str:
 
 @mcp.resource("brickscape://examples/{example}", name="example-plan", title="Example build plan",
               mime_type="application/json",
-              description="A complete example plan: 'forest-clearing', 'garden-20' or 'showcase' (the README cover).")
+              description="A complete example plan: 'forest-clearing', 'garden-20' or 'showcase'.")
 def example_plan(example: str) -> str:
     f = os.path.join(EXAMPLES, os.path.basename(example) + ".json")
     if not os.path.exists(f):

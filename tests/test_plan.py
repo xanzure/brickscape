@@ -69,3 +69,23 @@ def test_nothing_sticks_out_past_the_board():
         {"op": "hill", "area": {"rect": [0, 8, 16, 16]}, "height": 12, "style": "rock"}]})
     assert not outside(b)
     assert not any(r["checks"].values()), r["checks"]
+
+
+def test_waterfall_against_a_vertical_cliff():
+    b, r = build({"name": "wf", "board": {"width": 16, "depth": 16}, "seed": 3, "ops": [
+        {"op": "hill", "area": {"rect": [0, 4, 7, 16]}, "height": 24, "style": "rock", "falloff": 2, "lean": 0},
+        {"op": "waterfall", "at": [9, 8], "width": 2, "depth": 2, "height": 18},
+        {"op": "water", "points": [[10, 7], [11, 0]], "width": 3}]})
+    assert not any(r["checks"].values()), r["checks"]
+    trans = [p for p in b.pieces if p.color in (33, 43) and p.part in ("3004", "3005")]
+    assert len(trans) >= 6                       # the column survived repair, in real trans colours
+    assert min(-p.hi[1] for p in trans) < 1      # and it stands on the ground, not floating
+
+
+def test_ops_claim_their_footprint():
+    from brickscape.plan import Compiler
+    from brickscape.schema import parse
+    c = Compiler(parse({"board": {"width": 16, "depth": 16}, "ops": []}))
+    s = len(c.b.pieces)
+    c.op_block({"op": "block", "area": {"rect": [2, 2, 6, 6]}, "height": 3})
+    assert {(3, 3), (5, 5)} <= c.footprint(s)

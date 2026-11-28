@@ -18,8 +18,8 @@ real studs, checks the result against the parts' real shapes and connection poin
 what it can, and hands back a BrickLink Studio file, renders, a part list and step-by-step
 instructions.
 
-![A BrickScape build: a tall grey rock cliff, a stream running past it, a terraced bank with a big oak, a birch, boulders and plants on a green baseplate](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/showcase.png)
-*Built by BrickScape from a [seven-operation plan](https://github.com/xanzure/brickscape/blob/main/src/brickscape/examples/showcase.json): 1,466 parts, every one held by a real connection, no two parts intersecting.*
+![A LEGO waterfall diorama: grey rock cliffs, a cascade of transparent blue pools falling between them, ferns, palms and flowers on top](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/cover_waterfall.png)
+*A waterfall diorama built with BrickScape's rock, water and plant generators, then repaired and checked: 4,672 parts, every one held by a real connection, no two parts intersecting, every colour one LEGO makes ([model](https://github.com/xanzure/brickscape/blob/main/docs/cover/waterfall.ldr)).*
 
 > **Benchmark** (blind, position-swapped judging against plain Claude on 6 briefs): BrickScape was
 > **8.9x cheaper and 7.9x faster**, **all 6 of its builds pass the strict checker (plain Claude: 0 of 6)**,

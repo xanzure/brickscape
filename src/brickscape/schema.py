@@ -70,6 +70,8 @@ class Hill(_Op):
     falloff: Optional[float] = Field(None, gt=0, description="studs from edge to full height")
     colour: Optional[Colour] = None
     accent: Optional[Colour] = None
+    lean: float = Field(0.8, ge=0, le=2, description="rock only: studs of set-back per brick of height (0 = vertical)")
+    accent_amount: float = Field(0.06, ge=0, le=0.8, description="rock only: share of the accent colour")
 
 
 class Boulder(_Op):
@@ -102,6 +104,16 @@ class Water(_Op):
         return self
 
 
+class Waterfall(_Op):
+    op: Literal["waterfall"]
+    at: Point = Field(description="min corner [x, z] of the falling water's footprint, in front of the cliff")
+    width: int = Field(2, ge=1, le=16, description="studs along x")
+    depth: int = Field(1, ge=1, le=8, description="studs along z")
+    height: int = Field(24, ge=3, le=96, description="plates from the ground to the top of the fall")
+    colour: Optional[Colour] = None
+    streak_colour: Optional[Colour] = None
+
+
 class Tree(_Op):
     op: Literal["tree"]
     kind: Literal["oak", "birch", "pine", "palm", "cypress"] = "oak"
@@ -130,7 +142,7 @@ class Scatter(_Op):
     keep_clear: List[Area] = []
 
 
-Op = Annotated[Union[Brick, Block, Ldraw, Hill, Boulder, Path, Water, Tree, Plant, Scatter],
+Op = Annotated[Union[Brick, Block, Ldraw, Hill, Boulder, Path, Water, Waterfall, Tree, Plant, Scatter],
                Field(discriminator="op")]
 
 

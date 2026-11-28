@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- New `waterfall` operation: a column of transparent blue bricks against a cliff face, with
+  foam where it lands.
+- `hill` with `style: rock` takes `lean` (how far the face steps back per brick; 0 = vertical,
+  no rubble at the foot) and `accent_amount` (share of the accent colour).
+- Fix: operations now claim every cell their parts cover. A rotation check used the wrong
+  matrix entry, so later operations could be placed on top of earlier terrain's overhangs.
 - Prompts work when a client sends no arguments at all (Glama's inspector currently does):
   they ask the user for the missing description, photo or file instead of erroring.
 
