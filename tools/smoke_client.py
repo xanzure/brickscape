@@ -58,6 +58,7 @@ async def main(server, render):
             ok("prompt design_scene", "pond" in pr.messages[0].content.text)
             pr = await s.get_prompt("design_scene", {"description": "a pond", "width": "", "depth": "20", "source": ""})
             ok("prompt with empty form boxes", "32 x 20" in pr.messages[0].content.text)
+            ok("prompt with no arguments at all", "ask the user" in (await s.get_prompt("design_scene", {})).messages[0].content.text)
             for name, args in (("recreate_photo", {"photo_path": "ref.png", "width": ""}), ("check_model", {"path": "m.ldr", "source": ""})):
                 ok(f"prompt {name}", (await s.get_prompt(name, args)).messages)
             if render:

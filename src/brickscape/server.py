@@ -567,8 +567,9 @@ def _src(v):
 
 @mcp.prompt(name="design_scene", title="Design a LEGO scene",
             description="Design a buildable LEGO scene from a short description, then deliver the files.")
-def design_scene(description: str, width: str = "32", depth: str = "32", source: str = "lego") -> str:
-    return (f"Design a LEGO build with BrickScape: {description}\n"
+def design_scene(description: str = "", width: str = "32", depth: str = "32", source: str = "lego") -> str:
+    what = description.strip() or "(no description given: first ask the user what they want built)"
+    return (f"Design a LEGO build with BrickScape: {what}\n"
             f"Board: {_int(width, 32)} x {_int(depth, 32)} studs. Part source: {_src(source)}.\n"
             "Call `guide` first. Write a short brief (what goes where, palette, limits), then `build` a plan, "
             "`render` it and look at all four views, improve the plan and build again at least once. "
@@ -578,7 +579,8 @@ def design_scene(description: str, width: str = "32", depth: str = "32", source:
 
 @mcp.prompt(name="recreate_photo", title="Recreate a LEGO photo",
             description="Recreate a LEGO diorama from a reference photo as closely as possible.")
-def recreate_photo(photo_path: str, width: str = "32", depth: str = "32") -> str:
+def recreate_photo(photo_path: str = "", width: str = "32", depth: str = "32") -> str:
+    photo_path = photo_path.strip() or "(no photo given: first ask the user for the reference photo)"
     return (f"Recreate the LEGO build in the photo {photo_path} with BrickScape, on "
             f"{_int(width, 32)} x {_int(depth, 32)} studs.\n"
             "Look at the photo and note what goes where (rock, water, trees, paths), rough sizes in studs and "
@@ -589,7 +591,8 @@ def recreate_photo(photo_path: str, width: str = "32", depth: str = "32") -> str
 
 @mcp.prompt(name="check_model", title="Check a model is buildable",
             description="Check any LEGO model file for problems and explain how to fix them.")
-def check_model(path: str, source: str = "lego") -> str:
+def check_model(path: str = "", source: str = "lego") -> str:
+    path = path.strip() or "(no file given: first ask the user which model file to check)"
     return (f"Use BrickScape's `check` on {path} (part source {_src(source)}). Explain each problem it finds "
             "(intersecting parts, loose parts, unavailable parts, impossible colours) in plain words, "
             "say which parts are involved and how a builder could fix each one.")

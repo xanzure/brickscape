@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Prompts work when a client sends no arguments at all (Glama's inspector currently does):
+  they ask the user for the missing description, photo or file instead of erroring.
+
 ## 0.1.3 (2026-11-27)
 
 - `build` takes the plan as JSON text in one field. Its schema used `$ref` definitions that
