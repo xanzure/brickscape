@@ -44,12 +44,49 @@ NEEDS_DATA = {"search_parts", "part_info", "build", "render", "parts_list", "exp
               "compare", "study_reference", "check"}
 
 
+_SETUP = {"thread": None, "error": None}
+
+
+def _data_present():
+    from brickscape.config import LDRAW, DATA
+    return (os.path.isdir(os.path.join(LDRAW, "parts"))
+            and os.path.exists(os.path.join(DATA, "rebrickable", "elements.csv.gz"))
+            and bool(__import__("glob").glob(os.path.join(DATA, "ldcad", "*", "parts"))))
+
+
+def _auto_setup():
+    """First start without part data: download it in the background (LDraw library, LEGO part
+    tables, connection data; not Blender). BRICKSCAPE_NO_AUTO_SETUP=1 turns this off."""
+    if _data_present() or os.environ.get("BRICKSCAPE_NO_AUTO_SETUP") or _SETUP["thread"]:
+        return
+    import threading
+
+    def run():
+        try:
+            from brickscape.__main__ import ldraw_library
+            from brickscape.catalog import lego
+            from brickscape.core import snaps
+            ldraw_library()
+            lego.download()
+            snaps.download()
+        except Exception as e:                      # reported by the next tool call
+            _SETUP["error"] = f"{type(e).__name__}: {e}"
+    _SETUP["thread"] = threading.Thread(target=run, daemon=True)
+    _SETUP["thread"].start()
+
+
 def _missing_data():
     from brickscape.config import LDRAW
-    if not os.path.isdir(os.path.join(LDRAW, "parts")):
-        return (f"The LDraw parts library is not installed (looked in {LDRAW}). "
-                "Run `brickscape setup` once, or set LDRAW_LIBRARY_PATH.")
-    return None
+    t = _SETUP["thread"]
+    if t is not None and t.is_alive():
+        return ("BrickScape is downloading its part data (LDraw library, LEGO part tables, connection "
+                "data; about 150 MB, first start only). Try again in a minute.")
+    if _data_present():
+        return None
+    if _SETUP["error"]:
+        return f"Downloading the part data failed ({_SETUP['error']}). Run `brickscape setup` and try again."
+    return (f"The part data is not installed (LDraw library looked for in {LDRAW}). "
+            "Run `brickscape setup` once, or set LDRAW_LIBRARY_PATH.")
 
 
 def _tool(fn):
@@ -520,6 +557,7 @@ def check_model(path: str, source: str = "lego") -> str:
 
 
 def main():
+    _auto_setup()
     mcp.run()
 
 

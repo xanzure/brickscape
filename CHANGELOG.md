@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2 (2026-11-27)
+
+- The MCP server downloads its part data by itself on first start when it's missing (LDraw
+  library, LEGO part tables, connection data; about 150 MB, roughly 30 seconds). Until it's
+  done, tools answer "downloading part data, try again in a minute". Hosted sandboxes such as
+  Glama's and anyone who skips `brickscape setup` get working tools. Turn it off with
+  `BRICKSCAPE_NO_AUTO_SETUP=1`.
+
 ## 0.1.1 (2026-11-27)
 
 Fixes

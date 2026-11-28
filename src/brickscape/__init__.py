@@ -8,4 +8,4 @@
   brickscape.review    renders and appearance metrics
   brickscape.io        reading .ldr/.mpd/.io/.lxf models
 """
-__version__ = "0.1.1"
+__version__ = "0.1.2"
