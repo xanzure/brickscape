@@ -24,8 +24,11 @@ async def main(server, render):
         async with ClientSession(r, w) as s:
             init = await s.initialize()
             ok("initialize + instructions", init.instructions and "BrickScape" in init.instructions)
-            tools = {t.name for t in (await s.list_tools()).tools}
+            listed = (await s.list_tools()).tools
+            tools = {t.name for t in listed}
             ok("11 tools listed", len(tools) == 11, ", ".join(sorted(tools)))
+            refs = [t.name for t in listed if "$ref" in json.dumps(t.input_schema)]
+            ok("no $ref in tool input schemas (form-based inspectors can't resolve them)", not refs, ", ".join(refs))
             ok("3 prompts listed", len((await s.list_prompts()).prompts) == 3)
             ok("3 resources + 1 template", len((await s.list_resources()).resources) == 3
                and len((await s.list_resource_templates()).resource_templates) == 1)
@@ -43,13 +46,13 @@ async def main(server, render):
             plan = json.loads((await s.read_resource("brickscape://examples/garden-20")).contents[0].text)
             ok("resource example plan", plan.get("ops"))
             ok("resource plan schema", "Hill" in (await s.read_resource("brickscape://schema/plan")).contents[0].text)
-            await call("build", {"plan": plan}, "VALID")
-            await call("build", {"plan": TINY}, "VALID")
+            await call("build", {"plan": json.dumps(plan)}, "VALID")
+            await call("build", {"plan": json.dumps(TINY)}, "VALID")
             out = os.path.join(os.environ.get("BRICKSCAPE_OUT", "brickscape-out"), "smoke-tiny", "model.ldr")
             await call("check", {"path": out}, "VALID")
             await call("parts_list", {"name": "smoke tiny"}, "parts in")
             await call("export", {"name": "smoke tiny"}, ".io")
-            bad = await s.call_tool("build", {"plan": {"ops": [{"op": "tree", "at": [1, 1], "size": "huge"}]}})
+            bad = await s.call_tool("build", {"plan": json.dumps({"ops": [{"op": "tree", "at": [1, 1], "size": "huge"}]})})
             ok("bad plan rejected with field name", bad.is_error and "size" in bad.content[0].text)
             pr = await s.get_prompt("design_scene", {"description": "a pond"})
             ok("prompt design_scene", "pond" in pr.messages[0].content.text)

@@ -191,6 +191,36 @@ def guide() -> str:
     return GUIDE.format(ops=op_reference(), example=json.dumps(EXAMPLE, indent=1))
 
 
+_INDEX = []
+
+
+def _part_index():
+    """(part, description) of every LDraw part, read once and cached on disk."""
+    if _INDEX:
+        return _INDEX
+    from brickscape.config import LDRAW, DATA
+    pdir = os.path.join(LDRAW, "parts")
+    cache = os.path.join(DATA, "part_index.json")
+    stamp = os.path.getmtime(pdir)
+    try:
+        c = json.load(open(cache))
+        if c.get("stamp") == stamp:
+            _INDEX.extend(map(tuple, c["parts"]))
+            return _INDEX
+    except (OSError, ValueError):
+        pass
+    for f in sorted(os.listdir(pdir)):
+        if f.endswith(".dat"):
+            with open(os.path.join(pdir, f), errors="ignore") as fh:
+                _INDEX.append((f[:-4], fh.readline()[2:].strip()))
+    try:
+        os.makedirs(DATA, exist_ok=True)
+        json.dump({"stamp": stamp, "parts": _INDEX}, open(cache, "w"))
+    except OSError:
+        pass
+    return _INDEX
+
+
 @mcp.tool(title="Search parts", annotations=RO)
 @_tool
 def search_parts(query: Annotated[str, Field(description="Words that must all appear in the part description, e.g. 'slope 45 2 x 1' or 'plant leaves'")],
@@ -208,15 +238,10 @@ def search_parts(query: Annotated[str, Field(description="Words that must all ap
     words = query.lower().split()
     src = get(source)
     hits = []
-    for f in sorted(os.listdir(os.path.join(LDRAW, "parts"))):
-        if not f.endswith(".dat"):
-            continue
-        with open(os.path.join(LDRAW, "parts", f), errors="ignore") as fh:
-            desc = fh.readline()[2:].strip()
+    for pid, desc in _part_index():
         d = desc.lower()
         if desc.startswith("~") or not all(w in d for w in words):
             continue
-        pid = f[:-4]
         r = src.resolve(pid)
         cols = src.colours(r) if r else None
         hits.append((0 if r else 1, -(len(cols) if cols else 0), pid, desc, r, cols))
@@ -261,7 +286,7 @@ def part_info(part: Annotated[str, Field(description="LDraw part number, e.g. '3
     names = {v: k for k, v in colours().items()}
     return "\n".join([
         f"{part}: {i['desc']}",
-        f"size: {(hi[0] - lo[0]) / 20:g} x {(hi[2] - lo[2]) / 20:g} studs, {(hi[1] - lo[1]) / 8:g} plates high",
+        f"size: {(hi[0] - lo[0]) / 20:.3g} x {(hi[2] - lo[2]) / 20:.3g} studs, {(hi[1] - lo[1]) / 8:.3g} plates high",
         "connections: " + (", ".join(f"{n} {k}" for k, n in kinds.items()) or "none known")
         + ("" if had else " (no detailed connection data: studs and bottom only)"),
         f"{source}: " + ("not available" if not r else f"{len(cols)} colours: "
@@ -298,7 +323,7 @@ def _report(r, removed, recol):
 
 @mcp.tool(title="Build a plan", annotations=WRITES)
 @_tool
-def build(plan: Annotated[Union[Plan, str], Field(description="The build plan: board size, seed and a list of operations (hill, block, water, path, boulder, tree, plant, scatter, brick, ldraw). An object or a JSON string.")],
+def build(plan: Annotated[str, Field(description="The build plan as JSON text: {\"name\": ..., \"board\": {\"width\": 32, \"depth\": 32}, \"seed\": 1, \"ops\": [...]}. Operations: hill, block, water, path, boulder, tree, plant, scatter, brick, ldraw. Full field reference: the `guide` tool or the brickscape://schema/plan resource; example plans: brickscape://examples/{forest-clearing,garden-20,showcase}.")],
           source: Source = "lego") -> str:
     """Compile a build plan into a LEGO model, repair it and validate it strictly.
 

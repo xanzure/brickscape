@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.3 (2026-11-27)
+
+- `build` takes the plan as JSON text in one field. Its schema used `$ref` definitions that
+  form-based MCP inspectors (Glama's) can't resolve, so the tool couldn't be called there and
+  plans had to be entered field by field. The full plan schema stays available as the
+  `brickscape://schema/plan` resource and in `guide`; invalid plans still name the exact field.
+- `search_parts` is about 25x faster after the first call (part descriptions are indexed once).
+- `part_info` rounds sizes sensibly.
+
 ## 0.1.2 (2026-11-27)
 
 - The MCP server downloads its part data by itself on first start when it's missing (LDraw
