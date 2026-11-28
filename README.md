@@ -19,7 +19,7 @@ what it can, and hands back a BrickLink Studio file, renders, a part list and st
 instructions.
 
 ![A LEGO waterfall diorama: grey rock cliffs, a cascade of transparent blue pools falling between them, ferns, palms and flowers on top](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/showcase.png)
-*A waterfall diorama built with BrickScape's rock, water and plant generators, then repaired and checked: 4,672 parts, every one held by a real connection, no two parts intersecting, every colour one LEGO makes ([model](https://github.com/xanzure/brickscape/blob/main/docs/cover/waterfall.ldr)).*
+*A waterfall diorama recreated from a reference photo ([credit](#credits)) with BrickScape's rock, water and plant generators, then repaired and checked: 4,672 parts, every one held by a real connection, no two parts intersecting, every colour one LEGO makes ([model](https://github.com/xanzure/brickscape/blob/main/docs/cover/waterfall.ldr)).*
 
 > **Benchmark** (blind, position-swapped judging against plain Claude on 6 briefs): BrickScape was
 > **8.9x cheaper and 7.9x faster**, **all 6 of its builds pass the strict checker (plain Claude: 0 of 6)**,
@@ -363,6 +363,7 @@ tools/sandbox_test.sh curl                # exercise every tool over MCP, like a
 - [LDCad shadow library](https://github.com/RolandMelkert/LDCadShadowLibrary) by Roland Melkert
   (CC BY-SA 4.0): connection data, downloaded at setup.
 - [Rebrickable](https://rebrickable.com/downloads/): part, colour and element tables, downloaded at setup.
+- Cover: recreated from a reference photo in ["Little hiking terrain with waterfall and cave" on r/lego](https://www.reddit.com/r/lego/comments/1xq0y7q/little_hiking_terrain_with_waterfall_and_cave/) (4th photo); the build is BrickScape's own, the original design is theirs.
 - Benchmark reference photo: ["Waterfall" by Fuchs](https://rebrickable.com/mocs/MOC-59853/fuchs/waterfall/) (MOC-59853).
 
 MIT licensed. LEGO is a trademark of the LEGO Group, which does not sponsor or endorse this
