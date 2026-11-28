@@ -18,7 +18,7 @@ real studs, checks the result against the parts' real shapes and connection poin
 what it can, and hands back a BrickLink Studio file, renders, a part list and step-by-step
 instructions.
 
-![A LEGO waterfall diorama: grey rock cliffs, a cascade of transparent blue pools falling between them, ferns, palms and flowers on top](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/cover_waterfall.png)
+![A LEGO waterfall diorama: grey rock cliffs, a cascade of transparent blue pools falling between them, ferns, palms and flowers on top](https://raw.githubusercontent.com/xanzure/brickscape/main/docs/img/showcase.png)
 *A waterfall diorama built with BrickScape's rock, water and plant generators, then repaired and checked: 4,672 parts, every one held by a real connection, no two parts intersecting, every colour one LEGO makes ([model](https://github.com/xanzure/brickscape/blob/main/docs/cover/waterfall.ldr)).*
 
 > **Benchmark** (blind, position-swapped judging against plain Claude on 6 briefs): BrickScape was
